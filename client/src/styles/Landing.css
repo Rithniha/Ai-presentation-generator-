@@ -1,0 +1,204 @@
+/* Landing Page & Dashboard Styles */
+
+.landing-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 50% -20%, hsla(250, 89%, 65%, 0.15) 0%, transparent 50%),
+              radial-gradient(circle at 0% 100%, hsla(190, 95%, 50%, 0.05) 0%, transparent 40%);
+}
+
+.landing-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4rem 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.badge {
+  background-color: rgba(111, 76, 255, 0.1);
+  border: 1px solid rgba(111, 76, 255, 0.3);
+  padding: 0.35rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: hsl(var(--primary-hover));
+  margin-bottom: 1.5rem;
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.landing-title {
+  font-size: 3.5rem;
+  line-height: 1.15;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(to right, #ffffff 40%, hsl(var(--text-secondary)) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@media (max-width: 768px) {
+  .landing-title {
+    font-size: 2.25rem;
+  }
+}
+
+.landing-subtitle {
+  font-size: 1.15rem;
+  color: hsl(var(--text-secondary));
+  max-width: 600px;
+  margin-bottom: 2.5rem;
+  line-height: 1.6;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 3.5rem;
+}
+
+/* Dashboard Styles */
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  width: 100%;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+}
+
+.section-title {
+  font-size: 1.75rem;
+  color: hsl(var(--text-primary));
+}
+
+.deck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.deck-card {
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.deck-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)));
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.deck-card:hover::after {
+  opacity: 1;
+}
+
+.deck-title {
+  font-size: 1.2rem;
+  color: hsl(var(--text-primary));
+  line-height: 1.4;
+  font-family: var(--font-sans);
+}
+
+.deck-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.deck-date {
+  font-size: 0.75rem;
+  color: hsl(var(--text-muted));
+}
+
+.deck-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.deck-action-btn {
+  background: transparent;
+  border: none;
+  color: hsl(var(--text-muted));
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.deck-action-btn:hover {
+  color: hsl(var(--danger));
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.guest-alert {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.02) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.guest-alert-text {
+  font-size: 0.9rem;
+  color: hsl(var(--text-primary));
+  flex: 1;
+}
+
+.guest-alert-bold {
+  font-weight: 700;
+  color: #fca5a5;
+}
+
+/* Warm up backend indicator styles */
+.warmup-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background-color: hsla(224, 47%, 20%, 0.5);
+  border: 1px dashed hsl(var(--border-color));
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  margin-top: 1rem;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-left-color: hsl(var(--primary));
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

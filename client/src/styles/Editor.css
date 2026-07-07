@@ -1,0 +1,368 @@
+/* Editor Workspace, WYSIWYG Canvas, and Template layout designs */
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr 340px;
+  height: 100vh;
+  overflow: hidden;
+  background-color: hsl(var(--bg-primary));
+}
+
+@media (max-width: 1024px) {
+  .editor-layout {
+    grid-template-columns: 80px 1fr 280px;
+  }
+}
+
+/* Sidebar lists */
+.editor-sidebar {
+  border-right: 1px solid hsl(var(--border-color));
+  background-color: hsla(var(--bg-secondary) / 0.7);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sidebar-title {
+  padding: 1.25rem 1.5rem;
+  font-size: 1.1rem;
+  border-bottom: 1px solid hsl(var(--border-color));
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.slide-thumbnails-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.thumbnail-card {
+  aspect-ratio: 16/9;
+  border: 1px solid hsl(var(--border-color));
+  border-radius: var(--radius-sm);
+  background-color: hsl(var(--bg-primary));
+  cursor: pointer;
+  padding: 0.5rem;
+  font-size: 0.65rem;
+  color: hsl(var(--text-secondary));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: var(--transition);
+  position: relative;
+}
+
+.thumbnail-card.active {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+.thumbnail-num {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  font-weight: 700;
+  color: hsl(var(--text-muted));
+}
+
+/* Canvas Viewport */
+.canvas-viewport {
+  flex: 1;
+  background-color: #0b0f19;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* 16:9 Widescreen slide scaling container */
+.slide-frame {
+  width: 100%;
+  max-width: 860px;
+  aspect-ratio: 16/9;
+  background-color: hsl(var(--bg-secondary));
+  border-radius: var(--radius-lg);
+  border: 1px solid hsl(var(--border-color));
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: var(--transition);
+  overflow: hidden;
+}
+
+/* Canvas Top Actions Bar */
+.editor-topbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: hsla(var(--bg-secondary) / 0.5);
+  border-bottom: 1px solid hsl(var(--border-color));
+}
+
+/* Content Editable inline elements */
+[contenteditable="true"] {
+  outline: none;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+[contenteditable="true"]:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+[contenteditable="true"]:focus {
+  background-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 1px hsl(var(--primary));
+}
+
+/* Editable slide structures */
+.slide-header {
+  font-size: 2.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.slide-icon {
+  color: hsl(var(--accent));
+}
+
+.slide-content-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Slide Layout Renderings */
+
+/* 1. Title slide centered */
+.layout-title {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.layout-title h2 {
+  font-size: 3rem;
+  line-height: 1.2;
+}
+
+.layout-title p {
+  font-size: 1.25rem;
+  color: hsl(var(--text-secondary));
+  margin-top: 1rem;
+}
+
+/* 2. Standard Bullet list */
+.layout-bullets ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.layout-bullets li {
+  font-size: 1.15rem;
+  position: relative;
+  padding-left: 1.75rem;
+  color: hsl(var(--text-secondary));
+}
+
+.layout-bullets li::before {
+  content: "✦";
+  position: absolute;
+  left: 0;
+  color: hsl(var(--primary));
+}
+
+/* 3. Side-by-side Columns */
+.layout-columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.column-card {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid hsl(var(--border-color));
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  color: hsl(var(--text-secondary));
+}
+
+/* 4. Large stats layout */
+.layout-stats {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.stat-number {
+  font-size: 6rem;
+  font-weight: 800;
+  color: hsl(var(--accent));
+  line-height: 1;
+  font-family: var(--font-display);
+}
+
+.stat-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stat-label {
+  font-size: 1.25rem;
+  color: hsl(var(--text-primary));
+}
+
+.stat-sublabel {
+  font-size: 0.95rem;
+  color: hsl(var(--text-muted));
+}
+
+/* 5. Timeline roadmap */
+.layout-timeline {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  position: relative;
+}
+
+.layout-timeline::after {
+  content: '';
+  position: absolute;
+  top: 45px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background-color: hsla(250, 89%, 65%, 0.2);
+  z-index: 1;
+}
+
+.timeline-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.timeline-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: hsl(var(--primary));
+  border: 4px solid hsl(var(--bg-secondary));
+  margin-bottom: 1rem;
+}
+
+.timeline-card {
+  font-size: 0.95rem;
+  color: hsl(var(--text-secondary));
+}
+
+/* Right Edit Panels */
+.edit-panel {
+  border-left: 1px solid hsl(var(--border-color));
+  background-color: hsla(var(--bg-secondary) / 0.7);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.panel-section {
+  padding: 1.5rem;
+  border-bottom: 1px solid hsl(var(--border-color));
+}
+
+.panel-section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: hsl(var(--text-muted));
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  letter-spacing: 0.05em;
+}
+
+/* Theme picker grid */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.theme-card {
+  padding: 0.75rem;
+  border: 1px solid hsl(var(--border-color));
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: center;
+  font-size: 0.85rem;
+  transition: var(--transition);
+}
+
+.theme-card:hover {
+  border-color: hsl(var(--text-secondary));
+}
+
+.theme-card.active {
+  border-color: hsl(var(--primary));
+  background-color: var(--primary-glow);
+}
+
+/* Outline Gate / Timeline step editor */
+.outline-gate-container {
+  max-width: 800px;
+  margin: 3rem auto;
+  padding: 2rem;
+}
+
+.outline-node-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: hsl(var(--bg-secondary));
+  border: 1px solid hsl(var(--border-color));
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  transition: var(--transition);
+}
+
+.outline-node-item:hover {
+  border-color: var(--border-glow);
+}
+
+.outline-node-handle {
+  cursor: grab;
+  color: hsl(var(--text-muted));
+}
+
+.outline-node-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: hsl(var(--text-primary));
+  font-size: 1.1rem;
+  outline: none;
+  font-weight: 600;
+}

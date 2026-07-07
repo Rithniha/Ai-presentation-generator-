@@ -1,0 +1,16 @@
+{
+  "name": "ai-presentation-generator",
+  "version": "1.0.0",
+  "description": "AI-powered PowerPoint slide builder",
+  "main": "server/server.js",
+  "scripts": {
+    "install-all": "npm install && npm install --prefix client && npm install --prefix server",
+    "client": "npm run dev --prefix client",
+    "server": "npm run start --prefix server",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
