@@ -4,6 +4,7 @@ import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import OutlineEditor from './pages/OutlineEditor';
 import MainEditor from './pages/MainEditor';
+import Auth from './pages/Auth';
 import './styles/index.css';
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/auth" element={<Auth />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/outline-editor" element={<OutlineEditor />} />
         <Route path="/editor/:id" element={<MainEditor />} />

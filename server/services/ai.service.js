@@ -1,4 +1,4 @@
-const { GoogleGenAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Fallback Mock generator when GEMINI_API_KEY is not defined
 const getMockOutline = (prompt, slideCount = 5) => {
@@ -52,7 +52,7 @@ const getMockOutline = (prompt, slideCount = 5) => {
 let aiClient = null;
 if (process.env.GEMINI_API_KEY) {
   // Setup Google AI Studio Generative AI instance
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   aiClient = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
 } else {
   console.warn('⚠️ GEMINI_API_KEY environment variable is not defined. Falling back to local Mock AI generator.');

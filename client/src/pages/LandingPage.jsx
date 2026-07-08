@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import { getGuestSessionId } from '../services/auth';
+import { authService, getGuestSessionId } from '../services/auth';
 import { Sparkles, HelpCircle, ArrowRight } from 'lucide-react';
+import Auth from './Auth';
 import '../styles/Landing.css';
 
 export default function LandingPage() {
@@ -12,6 +13,42 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(false);
   const [warmingUp, setWarmingUp] = useState(false);
   const [warmupTimer, setWarmupTimer] = useState(0);
+  const [user, setUser] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Load user session on mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const u = await authService.getMe();
+        setUser(u);
+      } catch (err) {
+        console.log('No active session.');
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const handleAuthSuccess = async (success) => {
+    setShowAuthModal(false);
+    if (success) {
+      try {
+        const u = await authService.getMe();
+        setUser(u);
+      } catch (err) {
+        console.log('Error reloading user:', err);
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      setUser(null);
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
 
   // Ping backend to warm it up on page load (Render free tier cold starts)
   useEffect(() => {
@@ -77,7 +114,52 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="landing-container">
+    <div className="landing-container" style={{ paddingTop: '5.5rem' }}>
+      <header className="landing-header" style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '1.25rem 2rem',
+        zIndex: 10,
+        borderBottom: '1px solid hsl(var(--border-color))',
+        background: 'rgba(15, 23, 42, 0.6)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontFamily: 'var(--font-display)', fontSize: '1.2rem', cursor: 'pointer' }} onClick={() => navigate('/')}>
+          <Sparkles size={20} style={{ color: 'hsl(var(--primary))' }} />
+          SlideGen AI
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {user ? (
+            <>
+              <span style={{ fontSize: '0.9rem', color: 'hsl(var(--text-secondary))' }}>
+                Hi, <strong style={{ color: 'hsl(var(--text-primary))' }}>{user.name}</strong>
+              </span>
+              <button onClick={() => navigate('/dashboard')} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                Dashboard
+              </button>
+              <button onClick={handleLogout} className="btn btn-danger" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setShowAuthModal(true)} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                Sign In / Sign Up
+              </button>
+              <button onClick={() => navigate('/dashboard')} className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                Guest Dashboard
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+
       <div className="landing-hero">
         <div className="badge">
           <Sparkles size={14} />
@@ -137,10 +219,11 @@ export default function LandingPage() {
 
         <div style={{ marginTop: '2.5rem', display: 'flex', gap: '1.5rem' }}>
           <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
-            View My Decks (Guest Dashboard)
+            {user ? 'View My Saved Decks' : 'View My Decks (Guest Dashboard)'}
           </button>
         </div>
       </div>
+      {showAuthModal && <Auth onClose={handleAuthSuccess} />}
     </div>
   );
 }
