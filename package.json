@@ -4,7 +4,7 @@
   "description": "AI-powered PowerPoint slide builder",
   "main": "server/server.js",
   "scripts": {
-    "install-all": "npm install && npm install --prefix client && npm install --prefix server",
+    "install-all": "npm install && npm install --legacy-peer-deps --prefix client && npm install --legacy-peer-deps --prefix server",
     "client": "npm run dev --prefix client",
     "server": "npm run start --prefix server",
     "dev": "concurrently \"npm run server\" \"npm run client\""
