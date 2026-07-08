@@ -225,6 +225,14 @@ export default function MainEditor() {
             {presentation.title}
           </span>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button 
+              onClick={() => navigate(`/editor/${id}/outline`)} 
+              className="btn btn-secondary" 
+              style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+            >
+              <FileText size={14} />
+              Edit Outline
+            </button>
             <button onClick={handleSave} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }} disabled={saving}>
               <Save size={14} />
               {saving ? 'Saving...' : 'Save progress'}
@@ -276,29 +284,57 @@ export default function MainEditor() {
             )}
 
             {activeSlide.layout === 'bullets' && (
-              <ul>
-                {activeSlide.content.map((bullet, bIdx) => (
-                  <li key={bIdx} style={{ position: 'relative' }}>
-                    <div
-                      contentEditable="true"
-                      suppressContentEditableWarning={true}
-                      onBlur={(e) => handleBulletBlur(bIdx, e.target.innerText)}
-                      style={{ display: 'inline-block', width: '90%' }}
+              <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
+                {activeSlide.content.map((bullet, bIdx) => {
+                  const leadingSpaces = bullet.match(/^ */)[0].length;
+                  const indent = Math.min(2, Math.floor(leadingSpaces / 2));
+                  const trimmedText = bullet.trim();
+                  
+                  return (
+                    <li 
+                      key={bIdx} 
+                      style={{ 
+                        position: 'relative', 
+                        marginLeft: `${indent * 2}rem`, 
+                        listStyleType: 'none',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '0.5rem',
+                        marginBottom: '0.5rem'
+                      }}
                     >
-                      {bullet}
-                    </div>
+                      <span style={{ 
+                        color: indent === 0 ? 'hsl(var(--primary))' : indent === 1 ? 'hsl(var(--accent))' : 'hsl(var(--text-muted))',
+                        fontSize: '0.9rem',
+                        marginTop: '0.2rem',
+                        flexShrink: 0
+                      }}>
+                        {indent === 0 ? '✦' : indent === 1 ? '•' : '▪'}
+                      </span>
+                      <div
+                        contentEditable="true"
+                        suppressContentEditableWarning={true}
+                        onBlur={(e) => {
+                          const padding = '  '.repeat(indent);
+                          handleBulletBlur(bIdx, padding + e.target.innerText.trim());
+                        }}
+                        style={{ display: 'inline-block', width: '90%', fontSize: indent === 0 ? '1.15rem' : indent === 1 ? '1rem' : '0.9rem' }}
+                      >
+                        {trimmedText}
+                      </div>
 
-                    {/* Floating AI helper controls */}
-                    <button 
-                      onClick={() => setRewriteTarget({ slideIdx: activeSlideIdx, bulletIdx: bIdx, text: bullet })}
-                      className="deck-action-btn"
-                      style={{ position: 'absolute', right: 0, top: 0, padding: '0.2rem' }}
-                      title="AI Rewrite"
-                    >
-                      <Sparkles size={12} style={{ color: 'hsl(var(--accent))' }} />
-                    </button>
-                  </li>
-                ))}
+                      {/* Floating AI helper controls */}
+                      <button 
+                        onClick={() => setRewriteTarget({ slideIdx: activeSlideIdx, bulletIdx: bIdx, text: trimmedText })}
+                        className="deck-action-btn"
+                        style={{ position: 'absolute', right: 0, top: 0, padding: '0.2rem' }}
+                        title="AI Rewrite"
+                      >
+                        <Sparkles size={12} style={{ color: 'hsl(var(--accent))' }} />
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
 

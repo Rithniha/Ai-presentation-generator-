@@ -13,6 +13,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/outline-editor" element={<OutlineEditor />} />
+        <Route path="/editor/:id/outline" element={<OutlineEditor />} />
         <Route path="/editor/:id" element={<MainEditor />} />
       </Routes>
     </Router>

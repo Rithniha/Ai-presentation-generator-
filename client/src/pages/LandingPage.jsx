@@ -61,10 +61,21 @@ export default function LandingPage() {
       setWarmingUp(false);
       setLoading(false);
 
-      // 2. Navigate to Outline Editor, passing generated deck structure as router state
-      navigate('/outline-editor', {
+      // 2. Save the generated outline as a draft presentation in the database immediately
+      const draftResponse = await api.post('/api/presentations', {
+        title: response.data.title,
+        slides: response.data.slides,
+        guestSessionId: getGuestSessionId(),
+        theme: 'classic'
+      });
+
+      clearTimeout(warmupAlert);
+      setWarmingUp(false);
+      setLoading(false);
+
+      // 3. Navigate to the Outline Editor workspace with the draft ID
+      navigate(`/editor/${draftResponse.data._id}/outline`, {
         state: {
-          generatedDeck: response.data,
           originalPrompt: prompt
         }
       });
