@@ -189,194 +189,205 @@ export default function Auth({ onClose }) {
       <div className="auth-modal-backdrop" onClick={onClose}></div>
 
       <div className="auth-card" ref={modalRef} role="dialog" aria-modal="true">
-        {/* Card Header with Title and Close button */}
-        <div className="auth-card-header">
-          <h1 className="auth-card-title-left">
-            {isSignUp ? 'Create Account' : 'Sign In'}
-          </h1>
-          <button type="button" className="auth-close-button" onClick={onClose || (() => navigate('/'))} aria-label="Close">
-            <X size={16} />
-          </button>
+        {/* Left Side: Form Side */}
+        <div className="auth-form-side">
+          <div className="auth-card-header">
+            <h1 className="auth-card-title-left">
+              {isSignUp ? 'Create Account' : 'Sign In'}
+            </h1>
+            <button type="button" className="auth-close-button" onClick={onClose || (() => navigate('/'))} aria-label="Close">
+              <X size={16} />
+            </button>
+          </div>
+
+          {error && <div className="error-message" role="alert">{error}</div>}
+          {successMessage && <div className="success-message">{successMessage}</div>}
+
+          {!isSignUp ? (
+            /* Sign In Screen */
+            <div className="auth-view-container">
+              {/* Form */}
+              <form onSubmit={handleSignIn} className="auth-form">
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <div className="input-wrapper">
+                    <Mail className="input-icon-left" size={18} />
+                    <input
+                      type="email"
+                      className="form-input icon-padding-left"
+                      placeholder="name@work-email.com"
+                      value={signInEmail}
+                      onChange={(e) => setSignInEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Password</label>
+                  <div className="input-wrapper">
+                    <Lock className="input-icon-left" size={18} />
+                    <input
+                      type={showSignInPassword ? 'text' : 'password'}
+                      className="form-input icon-padding-left"
+                      placeholder="Enter your password"
+                      value={signInPassword}
+                      onChange={(e) => setSignInPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowSignInPassword(!showSignInPassword)}
+                      aria-label={showSignInPassword ? "Hide password" : "Show password"}
+                    >
+                      {showSignInPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Forgot password */}
+                <div className="forgot-password-container">
+                  <a href="#forgot" onClick={handleForgotPassword} className="auth-link font-sm">
+                    Forgot password?
+                  </a>
+                </div>
+
+                {/* Primary button */}
+                <button type="submit" className="btn-primary-auth" disabled={loading}>
+                  {loading ? 'Processing...' : 'Continue with email'}
+                </button>
+              </form>
+
+              {/* Divider */}
+              <div className="auth-divider">
+                <span>or</span>
+              </div>
+
+              {/* Google Sign-In button */}
+              <button type="button" onClick={handleGoogleSSO} className="btn-google" disabled={loading}>
+                <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21.35,11.1H12v2.7h5.38c-0.24,1.28 -0.96,2.37 -2.04,3.1v2.58h3.3c1.93,-1.78 3.04,-4.4 3.04,-7.48c0,-0.61 -0.05,-1.2 -0.16,-1.72Z" fill="#4285F4" />
+                  <path d="M12,20.6c2.43,0 4.47,-0.8 5.96,-2.2l-3.3,-2.58c-0.91,0.61 -2.08,0.98 -3.3,0.98c-2.34,0 -4.33,-1.58 -5.04,-3.7H2.9v2.66c1.49,2.96 4.54,4.96 8.1,4.96Z" fill="#34A853" />
+                  <path d="M6.96,13.1c-0.18,-0.54 -0.28,-1.11 -0.28,-1.7c0,-0.59 0.1,-1.16 0.28,-1.7V7.04H2.9C2.3,8.23 2,9.58 2,11c0,1.42 0.3,2.77 0.9,3.96l4.06,-3.16Z" fill="#FBBC05" />
+                  <path d="M12,5.2c1.32,0 2.5,0.45 3.44,1.35l2.58,-2.58C16.46,2.56 14.43,1.6 12,1.6C8.44,1.6 5.39,3.6 3.9,6.56l4.06,3.16c0.71,-2.12 2.7,-3.72 5.04,-3.72Z" fill="#EA4335" />
+                </svg>
+                Continue with Google
+              </button>
+
+              {/* Bottom text */}
+              <div className="auth-bottom-text">
+                Don't have an account?{' '}
+                <button type="button" onClick={() => { setIsSignUp(true); setError(''); setSuccessMessage(''); }} className="auth-link-button">
+                  Sign up
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Sign Up Screen */
+            <div className="auth-view-container">
+              {/* Form */}
+              <form onSubmit={handleSignUp} className="auth-form">
+                <div className="form-group">
+                  <label className="form-label">Name</label>
+                  <div className="input-wrapper">
+                    <User className="input-icon-left" size={18} />
+                    <input
+                      type="text"
+                      className="form-input icon-padding-left"
+                      placeholder="John Doe"
+                      value={signUpName}
+                      onChange={(e) => setSignUpName(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <div className="input-wrapper">
+                    <Mail className="input-icon-left" size={18} />
+                    <input
+                      type="email"
+                      className="form-input icon-padding-left"
+                      placeholder="you@example.com"
+                      value={signUpEmail}
+                      onChange={(e) => setSignUpEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Password</label>
+                  <div className="input-wrapper">
+                    <Lock className="input-icon-left" size={18} />
+                    <input
+                      type={showSignUpPassword ? 'text' : 'password'}
+                      className="form-input icon-padding-left"
+                      placeholder="••••••••"
+                      value={signUpPassword}
+                      onChange={(e) => setSignUpPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                      aria-label={showSignUpPassword ? "Hide password" : "Show password"}
+                    >
+                      {showSignUpPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Primary button */}
+                <button type="submit" className="btn-primary-auth" disabled={loading}>
+                  {loading ? 'Creating...' : 'Sign Up'}
+                </button>
+              </form>
+
+              {/* Divider */}
+              <div className="auth-divider">
+                <span>or</span>
+              </div>
+
+              {/* Google Sign-Up button */}
+              <button type="button" onClick={handleGoogleSSO} className="btn-google" disabled={loading}>
+                <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21.35,11.1H12v2.7h5.38c-0.24,1.28 -0.96,2.37 -2.04,3.1v2.58h3.3c1.93,-1.78 3.04,-4.4 3.04,-7.48c0,-0.61 -0.05,-1.2 -0.16,-1.72Z" fill="#4285F4" />
+                  <path d="M12,20.6c2.43,0 4.47,-0.8 5.96,-2.2l-3.3,-2.58c-0.91,0.61 -2.08,0.98 -3.3,0.98c-2.34,0 -4.33,-1.58 -5.04,-3.7H2.9v2.66c1.49,2.96 4.54,4.96 8.1,4.96Z" fill="#34A853" />
+                  <path d="M6.96,13.1c-0.18,-0.54 -0.28,-1.11 -0.28,-1.7c0,-0.59 0.1,-1.16 0.28,-1.7V7.04H2.9C2.3,8.23 2,9.58 2,11c0,1.42 0.3,2.77 0.9,3.96l4.06,-3.16Z" fill="#FBBC05" />
+                  <path d="M12,5.2c1.32,0 2.5,0.45 3.44,1.35l2.58,-2.58C16.46,2.56 14.43,1.6 12,1.6C8.44,1.6 5.39,3.6 3.9,6.56l4.06,3.16c0.71,-2.12 2.7,-3.72 5.04,-3.72Z" fill="#EA4335" />
+                </svg>
+                Continue with Google
+              </button>
+
+              {/* Bottom text */}
+              <div className="auth-bottom-text">
+                Already have an account?{' '}
+                <button type="button" onClick={() => { setIsSignUp(false); setError(''); setSuccessMessage(''); }} className="auth-link-button">
+                  Sign in
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {error && <div className="error-message" role="alert">{error}</div>}
-        {successMessage && <div className="success-message">{successMessage}</div>}
-
-        {!isSignUp ? (
-          /* Sign In Screen */
-          <div className="auth-view-container">
-            {/* Form */}
-            <form onSubmit={handleSignIn} className="auth-form">
-              <div className="form-group">
-                <label className="form-label">Email</label>
-                <div className="input-wrapper">
-                  <Mail className="input-icon-left" size={18} />
-                  <input
-                    type="email"
-                    className="form-input icon-padding-left"
-                    placeholder="name@work-email.com"
-                    value={signInEmail}
-                    onChange={(e) => setSignInEmail(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Password</label>
-                <div className="input-wrapper">
-                  <Lock className="input-icon-left" size={18} />
-                  <input
-                    type={showSignInPassword ? 'text' : 'password'}
-                    className="form-input icon-padding-left"
-                    placeholder="Enter your password"
-                    value={signInPassword}
-                    onChange={(e) => setSignInPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowSignInPassword(!showSignInPassword)}
-                    aria-label={showSignInPassword ? "Hide password" : "Show password"}
-                  >
-                    {showSignInPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Forgot password */}
-              <div className="forgot-password-container">
-                <a href="#forgot" onClick={handleForgotPassword} className="auth-link font-sm">
-                  Forgot password?
-                </a>
-              </div>
-
-              {/* Primary button */}
-              <button type="submit" className="btn-primary-auth" disabled={loading}>
-                {loading ? 'Processing...' : 'Continue with email'}
-              </button>
-            </form>
-
-            {/* Divider */}
-            <div className="auth-divider">
-              <span>or</span>
-            </div>
-
-            {/* Google Sign-In button */}
-            <button type="button" onClick={handleGoogleSSO} className="btn-google" disabled={loading}>
-              <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21.35,11.1H12v2.7h5.38c-0.24,1.28 -0.96,2.37 -2.04,3.1v2.58h3.3c1.93,-1.78 3.04,-4.4 3.04,-7.48c0,-0.61 -0.05,-1.2 -0.16,-1.72Z" fill="#4285F4" />
-                <path d="M12,20.6c2.43,0 4.47,-0.8 5.96,-2.2l-3.3,-2.58c-0.91,0.61 -2.08,0.98 -3.3,0.98c-2.34,0 -4.33,-1.58 -5.04,-3.7H2.9v2.66c1.49,2.96 4.54,4.96 8.1,4.96Z" fill="#34A853" />
-                <path d="M6.96,13.1c-0.18,-0.54 -0.28,-1.11 -0.28,-1.7c0,-0.59 0.1,-1.16 0.28,-1.7V7.04H2.9C2.3,8.23 2,9.58 2,11c0,1.42 0.3,2.77 0.9,3.96l4.06,-3.16Z" fill="#FBBC05" />
-                <path d="M12,5.2c1.32,0 2.5,0.45 3.44,1.35l2.58,-2.58C16.46,2.56 14.43,1.6 12,1.6C8.44,1.6 5.39,3.6 3.9,6.56l4.06,3.16c0.71,-2.12 2.7,-3.72 5.04,-3.72Z" fill="#EA4335" />
-              </svg>
-              Continue with Google
-            </button>
-
-            {/* Bottom text */}
-            <div className="auth-bottom-text">
-              Don't have an account?{' '}
-              <button type="button" onClick={() => { setIsSignUp(true); setError(''); setSuccessMessage(''); }} className="auth-link-button">
-                Sign up
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Sign Up Screen */
-          <div className="auth-view-container">
-            {/* Form */}
-            <form onSubmit={handleSignUp} className="auth-form">
-              <div className="form-group">
-                <label className="form-label">Name</label>
-                <div className="input-wrapper">
-                  <User className="input-icon-left" size={18} />
-                  <input
-                    type="text"
-                    className="form-input icon-padding-left"
-                    placeholder="John Doe"
-                    value={signUpName}
-                    onChange={(e) => setSignUpName(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Email</label>
-                <div className="input-wrapper">
-                  <Mail className="input-icon-left" size={18} />
-                  <input
-                    type="email"
-                    className="form-input icon-padding-left"
-                    placeholder="you@example.com"
-                    value={signUpEmail}
-                    onChange={(e) => setSignUpEmail(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Password</label>
-                <div className="input-wrapper">
-                  <Lock className="input-icon-left" size={18} />
-                  <input
-                    type={showSignUpPassword ? 'text' : 'password'}
-                    className="form-input icon-padding-left"
-                    placeholder="••••••••"
-                    value={signUpPassword}
-                    onChange={(e) => setSignUpPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowSignUpPassword(!showSignUpPassword)}
-                    aria-label={showSignUpPassword ? "Hide password" : "Show password"}
-                  >
-                    {showSignUpPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Primary button */}
-              <button type="submit" className="btn-primary-auth" disabled={loading}>
-                {loading ? 'Creating...' : 'Sign Up'}
-              </button>
-            </form>
-
-            {/* Divider */}
-            <div className="auth-divider">
-              <span>or</span>
-            </div>
-
-            {/* Google Sign-Up button */}
-            <button type="button" onClick={handleGoogleSSO} className="btn-google" disabled={loading}>
-              <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21.35,11.1H12v2.7h5.38c-0.24,1.28 -0.96,2.37 -2.04,3.1v2.58h3.3c1.93,-1.78 3.04,-4.4 3.04,-7.48c0,-0.61 -0.05,-1.2 -0.16,-1.72Z" fill="#4285F4" />
-                <path d="M12,20.6c2.43,0 4.47,-0.8 5.96,-2.2l-3.3,-2.58c-0.91,0.61 -2.08,0.98 -3.3,0.98c-2.34,0 -4.33,-1.58 -5.04,-3.7H2.9v2.66c1.49,2.96 4.54,4.96 8.1,4.96Z" fill="#34A853" />
-                <path d="M6.96,13.1c-0.18,-0.54 -0.28,-1.11 -0.28,-1.7c0,-0.59 0.1,-1.16 0.28,-1.7V7.04H2.9C2.3,8.23 2,9.58 2,11c0,1.42 0.3,2.77 0.9,3.96l4.06,-3.16Z" fill="#FBBC05" />
-                <path d="M12,5.2c1.32,0 2.5,0.45 3.44,1.35l2.58,-2.58C16.46,2.56 14.43,1.6 12,1.6C8.44,1.6 5.39,3.6 3.9,6.56l4.06,3.16c0.71,-2.12 2.7,-3.72 5.04,-3.72Z" fill="#EA4335" />
-              </svg>
-              Continue with Google
-            </button>
-
-            {/* Bottom text */}
-            <div className="auth-bottom-text">
-              Already have an account?{' '}
-              <button type="button" onClick={() => { setIsSignUp(false); setError(''); setSuccessMessage(''); }} className="auth-link-button">
-                Sign in
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Right Side: Visual Section */}
+        <div className="auth-visual-side">
+          <div className="visual-glow-glow"></div>
+          <div className="visual-circuit-overlay"></div>
+          <img src="/ai_robot_mascot.png" alt="AI Robot Mascot" className="auth-mascot-image" />
+          <h2 className="visual-heading">AI PowerPoint <span className="visual-highlight">Engine</span></h2>
+          <p className="visual-subtext">Generate professional presentation slides in seconds using natural language.</p>
+        </div>
       </div>
 
       {/* Guest button is placed outside/below the card as a subtle link */}
