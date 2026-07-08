@@ -107,7 +107,8 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 1;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 /* Card layout */

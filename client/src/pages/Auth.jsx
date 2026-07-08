@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService, getGuestSessionId } from '../services/auth';
 import { Mail, Lock, User, Eye, EyeOff, X } from 'lucide-react';
@@ -21,6 +21,72 @@ export default function Auth({ onClose }) {
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+
+  // Accessibility Refs
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
+
+  // Accessibility & Keyboard listeners
+  useEffect(() => {
+    // 1. Store the active element to restore focus when the modal closes
+    previousFocusRef.current = document.activeElement;
+
+    // 2. Focus the first input field on open
+    const focusableElementsString = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const focusable = modalRef.current?.querySelectorAll(focusableElementsString) || [];
+    const firstInput = Array.from(focusable).find(el => el.tagName === 'INPUT' && !el.hasAttribute('disabled'));
+    if (firstInput) {
+      firstInput.focus();
+    } else if (focusable.length > 0) {
+      focusable[0].focus();
+    }
+
+    // 3. Close on Escape Key
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (onClose) onClose();
+      }
+    };
+
+    // 4. Trap Focus inside Modal (Tab key listener)
+    const handleTabKey = (e) => {
+      if (e.key !== 'Tab') return;
+      if (!modalRef.current) return;
+
+      const focusableElements = Array.from(modalRef.current.querySelectorAll(focusableElementsString))
+        .filter(el => !el.hasAttribute('disabled') && el.tabIndex !== -1);
+
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey) { // Shift + Tab
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          e.preventDefault();
+        }
+      } else { // Tab
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleTabKey);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleTabKey);
+      
+      // 5. Restore focus to the element that was focused before modal opened
+      if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
+        previousFocusRef.current.focus();
+      }
+    };
+  }, [onClose]);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -120,9 +186,9 @@ export default function Auth({ onClose }) {
       <div className="auth-bg-blob auth-bg-blob-2"></div>
       <div className="auth-bg-blob auth-bg-blob-3"></div>
       <div className="auth-grid-overlay"></div>
-      <div className="auth-modal-backdrop"></div>
+      <div className="auth-modal-backdrop" onClick={onClose}></div>
 
-      <div className="auth-card">
+      <div className="auth-card" ref={modalRef} role="dialog" aria-modal="true">
         {/* Card Header with Title and Close button */}
         <div className="auth-card-header">
           <h1 className="auth-card-title-left">
@@ -133,7 +199,7 @@ export default function Auth({ onClose }) {
           </button>
         </div>
 
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="error-message" role="alert">{error}</div>}
         {successMessage && <div className="success-message">{successMessage}</div>}
 
         {!isSignUp ? (
