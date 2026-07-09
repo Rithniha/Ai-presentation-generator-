@@ -266,7 +266,7 @@ export default function CreatePresentation() {
           <div className="create-form-left">
             {/* Section 1: Presentation Info */}
             <div>
-              <div className="create-section-title">1. Presentation Scope</div>
+              <div className="create-section-title">1. Presentation Information</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div className="create-input-group">
                   <label className="create-label">Presentation Title</label>
@@ -303,7 +303,7 @@ export default function CreatePresentation() {
                 </div>
 
                 <div className="create-input-group">
-                  <label className="create-label">Requirements / Guidelines</label>
+                  <label className="create-label">Requirements / AI Instructions</label>
                   <textarea
                     className="create-input create-textarea"
                     placeholder="Describe details, bullet points, core arguments, or sections you want the AI to include..."
@@ -312,13 +312,7 @@ export default function CreatePresentation() {
                     disabled={loading}
                   />
                 </div>
-              </div>
-            </div>
 
-            {/* Section 4: Extra Options */}
-            <div>
-              <div className="create-section-title">4. Extra Settings</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div className="create-input-group">
                   <label className="create-label">Number of Slides</label>
                   <input 
@@ -338,7 +332,7 @@ export default function CreatePresentation() {
                 </div>
 
                 <div className="create-input-group">
-                  <label className="create-label">Tone</label>
+                  <label className="create-label">Presentation Tone</label>
                   <select
                     className="create-input"
                     value={tone}
@@ -359,7 +353,7 @@ export default function CreatePresentation() {
           <div className="create-form-right">
             {/* Section 2: Target Audience Role */}
             <div>
-              <div className="create-section-title">2. Target Audience</div>
+              <div className="create-section-title">2. Audience</div>
               <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.75rem' }}>
                 Select who will view this deck. The AI will customize vocabulary and detail levels accordingly.
               </p>
@@ -644,7 +638,7 @@ export default function CreatePresentation() {
 
           <div className="create-form-footer">
             <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? 'Creating Slide Structure...' : 'Choose Template'}
+              {loading ? 'Creating Slide Structure...' : 'Generate Presentation'}
               <ArrowRight size={18} />
             </button>
 

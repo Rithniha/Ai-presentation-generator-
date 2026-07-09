@@ -57,7 +57,7 @@ export default function LandingPage() {
             width: 'auto', 
             margin: '0 auto', 
             borderRadius: '12px',
-            boxShadow: '0 8px 24px rgba(79, 70, 229, 0.35)',
+            boxShadow: '0 8px 24px rgba(37, 99, 235, 0.35)',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.75rem'
