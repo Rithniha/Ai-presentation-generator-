@@ -32,11 +32,13 @@ const PIE_COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4
 export default function CreatePresentation() {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
+  const [purpose, setPurpose] = useState('');
   const [requirements, setRequirements] = useState('');
   const [selectedRole, setSelectedRole] = useState('business');
   
   // Slide settings
-  const [slideCount, setSlideCount] = useState(6);
+  const [slideCount, setSlideCount] = useState('6');
+  const [slideCountError, setSlideCountError] = useState('');
   const [selectedTheme, setSelectedTheme] = useState('classic');
   const [tone, setTone] = useState('Professional');
 
@@ -96,6 +98,23 @@ export default function CreatePresentation() {
       parseSheetText(event.target.result);
     };
     reader.readAsText(file);
+  };
+
+  const handleSlideCountChange = (e) => {
+    const val = e.target.value;
+    const cleanVal = val.replace(/\D/g, '');
+    setSlideCount(cleanVal);
+
+    if (!cleanVal) {
+      setSlideCountError('Number of slides is required.');
+    } else {
+      const num = parseInt(cleanVal, 10);
+      if (num < 3 || num > 50) {
+        setSlideCountError('Number of slides must be between 3 and 50.');
+      } else {
+        setSlideCountError('');
+      }
+    }
   };
 
   // Sync columns selection to raw formatted text
@@ -186,9 +205,18 @@ export default function CreatePresentation() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
+    if (!purpose) return;
+
+    const num = parseInt(slideCount, 10);
+    if (isNaN(num) || num < 3 || num > 50) {
+      setSlideCountError('Number of slides must be between 3 and 50.');
+      return;
+    }
 
     const promptText = `
       Title: ${title.trim()}
+      Presentation Purpose: ${purpose}
+      Number of Slides: ${num}
       Requirements & Outline: ${requirements.trim()}
       Audience Role: ${selectedRole}
       Tone: ${tone}
@@ -199,10 +227,11 @@ export default function CreatePresentation() {
     navigate('/templates', {
       state: {
         title: title.trim(),
+        purpose,
         requirements: requirements.trim(),
         selectedRole,
         tone,
-        slideCount,
+        slideCount: num,
         includeChart,
         chartTitle,
         chartType,
@@ -250,6 +279,27 @@ export default function CreatePresentation() {
                   required
                   disabled={loading}
                 />
+              </div>
+
+              <div className="create-input-group">
+                <label className="create-label">Presentation Purpose</label>
+                <select
+                  className="create-input"
+                  value={purpose}
+                  onChange={(e) => setPurpose(e.target.value)}
+                  required
+                  disabled={loading}
+                >
+                  <option value="" disabled>Select presentation purpose</option>
+                  <option value="Seminar">Seminar</option>
+                  <option value="Project Presentation">Project Presentation</option>
+                  <option value="Business Pitch">Business Pitch</option>
+                  <option value="Research Presentation">Research Presentation</option>
+                  <option value="Workshop">Workshop</option>
+                  <option value="Meeting">Meeting</option>
+                  <option value="Training">Training</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
 
               <div className="create-input-group">
@@ -552,22 +602,40 @@ export default function CreatePresentation() {
           {/* Section 4: Extra Options */}
           <div>
             <div className="create-section-title">4. Extra Settings</div>
-
-            {/* Slide Count Range Selector */}
-            <div className="create-input-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="create-label">Total Number of Slides</label>
-                <span className="landing-slider-count">{slideCount} Slides</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="create-input-group">
+                <label className="create-label">Number of Slides</label>
+                <input 
+                  type="text"
+                  className={`create-input ${slideCountError ? 'input-error' : ''}`}
+                  placeholder="Enter number of slides (e.g., 10)"
+                  value={slideCount}
+                  onChange={handleSlideCountChange}
+                  disabled={loading}
+                  required
+                />
+                {slideCountError && (
+                  <span className="input-error-message">
+                    {slideCountError}
+                  </span>
+                )}
               </div>
-              <input 
-                type="range" 
-                min="3" 
-                max="12" 
-                className="landing-slider"
-                value={slideCount}
-                onChange={(e) => setSlideCount(parseInt(e.target.value))}
-                disabled={loading}
-              />
+
+              <div className="create-input-group">
+                <label className="create-label">Tone</label>
+                <select
+                  className="create-input"
+                  value={tone}
+                  onChange={(e) => setTone(e.target.value)}
+                  disabled={loading}
+                  required
+                >
+                  <option value="Professional">Professional</option>
+                  <option value="Academic">Academic</option>
+                  <option value="Creative">Creative</option>
+                  <option value="Formal">Formal</option>
+                </select>
+              </div>
             </div>
           </div>
 
