@@ -77,10 +77,10 @@ exports.createPresentation = async (req, res, next) => {
         userId: null
       });
 
-      if (guestDecksCount >= 3) {
+      if (guestDecksCount >= 100) {
         return res.status(403).json({
           success: false,
-          error: 'Guest limit reached (Max 3 decks). Please register for unlimited generations.'
+          error: 'Guest limit reached (Max 100 decks). Please register for unlimited generations.'
         });
       }
 

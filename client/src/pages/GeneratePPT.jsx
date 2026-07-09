@@ -11,6 +11,8 @@ export default function GeneratePPT() {
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
 
+  const hasFetched = React.useRef(false);
+
   const steps = [
     "Analyzing presentation topic...",
     "Structuring outline...",
@@ -22,28 +24,75 @@ export default function GeneratePPT() {
 
   useEffect(() => {
     let interval;
-    if (progress < 100) {
+    // Animate progress up to 90% while waiting for AI
+    if (progress < 90) {
       interval = setInterval(() => {
         setProgress(prev => {
-          const newProg = prev + (Math.random() * 5 + 2);
-          if (newProg >= 100) {
-            clearInterval(interval);
-            return 100;
-          }
-          return newProg;
+          const newProg = prev + (Math.random() * 3 + 1);
+          return newProg > 90 ? 90 : newProg;
         });
-      }, 300);
-    } else {
-      // Once 100% is reached, wait 1s and navigate to the editor
-      setTimeout(() => {
-        // In a real app we'd get the real ID from the backend creation response.
-        // For now, generating a dummy ID.
-        const newId = `pres_${Math.random().toString(36).substring(2, 9)}`;
-        navigate(`/editor/${newId}`, { state: { ...state } });
-      }, 1000);
+      }, 500);
     }
     return () => clearInterval(interval);
-  }, [progress, navigate, state]);
+  }, [progress]);
+
+  useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+
+    const generateDeck = async () => {
+      try {
+        // 1. Ask AI to generate the JSON outline
+        const aiResponse = await fetch('http://localhost:5000/api/generation/outline', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: state.promptText || 'A professional presentation',
+            slideCount: state.slideCount || 6
+          })
+        });
+        
+        const aiData = await aiResponse.json();
+        
+        if (!aiData.success || !aiData.data) {
+          throw new Error('AI failed to generate presentation');
+        }
+
+        const generatedOutline = aiData.data;
+
+        // 2. Save it to our database!
+        const saveResponse = await fetch('http://localhost:5000/api/presentations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: state.title || generatedOutline.title || 'Untitled',
+            theme: state.selectedTheme || 'classic',
+            slides: generatedOutline.slides || [],
+            guestSessionId: localStorage.getItem('guestSessionId') || 'demo_guest'
+          })
+        });
+
+        const saveData = await saveResponse.json();
+
+        if (saveData.success) {
+          setProgress(100);
+          setTimeout(() => {
+            navigate(`/editor/${saveData.data._id}`, { state: { ...state } });
+          }, 1000);
+        } else {
+           throw new Error(saveData.error || 'Failed to save presentation');
+        }
+        
+      } catch (error) {
+        console.error("Generation Error:", error);
+        alert(error.message || "Something went wrong generating the presentation.");
+        navigate('/create-deck');
+      }
+    };
+
+    generateDeck();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const stepIdx = Math.floor((progress / 100) * (steps.length - 1));

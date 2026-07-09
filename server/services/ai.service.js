@@ -1,4 +1,4 @@
-const { GoogleGenAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Fallback Mock generator when GEMINI_API_KEY is not defined
 const getMockOutline = (prompt, slideCount = 5) => {
@@ -52,8 +52,8 @@ const getMockOutline = (prompt, slideCount = 5) => {
 let aiClient = null;
 if (process.env.GEMINI_API_KEY) {
   // Setup Google AI Studio Generative AI instance
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  aiClient = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  aiClient = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
 } else {
   console.warn('⚠️ GEMINI_API_KEY environment variable is not defined. Falling back to local Mock AI generator.');
 }
@@ -69,10 +69,20 @@ exports.generateOutline = async (prompt, slideCount = 5) => {
   try {
     const systemPrompt = `
       You are an expert presentation outline generator.
-      Your task is to generate a structured slide presentation deck for the topic: "${prompt}".
-      You must generate exactly ${slideCount} slides.
+      You have been provided with detailed requirements by the user below, which may include the Title, specific requirements, a Target Audience Role (e.g., Student, Professor, Business Professional), and a Delivery Tone.
       
-      You must respond with raw JSON ONLY. Do not include markdown blocks, backticks, or comments. The output must be directly parseable.
+      USER REQUIREMENTS:
+      """
+      ${prompt}
+      """
+      
+      CRITICAL INSTRUCTIONS:
+      1. You MUST deeply tailor the vocabulary, complexity, and depth of the content to match the specified "Audience Role" and "Tone". 
+         - If the audience is a "Student", use educational, simple explanations.
+         - If "Professor", use highly academic, analytical language.
+         - If "Business Professional", focus strictly on ROI, metrics, and actionable strategies.
+      2. You must generate exactly ${slideCount} slides.
+      3. You must respond with raw JSON ONLY. Do not include markdown blocks, backticks, or comments. The output must be directly parseable.
       
       JSON format structure:
       {
@@ -94,7 +104,7 @@ exports.generateOutline = async (prompt, slideCount = 5) => {
 
       Choose layouts strategically:
       - 'title': Only use for the first slide (slide 1).
-      - 'stats': Use if there is a primary percentage, fraction, or currency metric to call out (e.g. Content list: ["85%", "User Satisfaction rate", "Based on 2026 audits"]).
+      - 'stats': Use if there is a primary percentage, fraction, or currency metric to call out.
       - 'columns': Use for side-by-side product comparisons or 3 pillars.
       - 'timeline': Use for milestone roadmaps or historical progression lists.
       - 'bullets': Standard slide format with 3-4 bullet points.
