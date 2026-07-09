@@ -98,9 +98,11 @@
 
 /* ── Side nav ── */
 .adv-side-nav {
-  width: 72px; background: #1e293b; color: #94a3b8;
+  width: 76px; background: #1e293b; color: #94a3b8;
   display: flex; flex-direction: column; align-items: center;
-  padding-top: 1rem; gap: 4px; flex-shrink: 0;
+  padding: 1rem 0; gap: 4px; flex-shrink: 0;
+  overflow-y: auto;
+  height: 100%;
 }
 .adv-nav-item {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -109,7 +111,7 @@
   transition: color 0.18s, background 0.18s;
 }
 .adv-nav-item:hover { color: #f1f5f9; background: rgba(255,255,255,0.06); }
-.adv-nav-item.active { color: #fff; background: rgba(255,255,255,0.11); }
+.adv-nav-item.active { color: #fff; background: #7c3aed; }
 
 /* ── Left drawer ── */
 .adv-drawer {

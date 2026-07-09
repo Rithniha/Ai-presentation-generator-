@@ -1823,34 +1823,7 @@ export default function MainEditor() {
           <button className="adv-tool-btn" title="Undo"><Undo size={16} /></button>
           <button className="adv-tool-btn" title="Redo"><Redo size={16} /></button>
         </div>
-        <div className="adv-topbar-center" style={{ gap: '4px' }}>
-          {[
-            { id: 'text', label: 'Text', icon: Type },
-            { id: 'table', label: 'Table', icon: Table },
-            { id: 'chart', label: 'Chart', icon: BarChart3 },
-            { id: 'image', label: 'Image', icon: ImageIcon },
-            { id: 'autolayout', label: 'Auto Layout', icon: LayoutGrid },
-            { id: 'asset', label: 'Asset', icon: Package },
-            { id: 'media', label: 'Media', icon: Play },
-            { id: 'shape', label: 'Shape', icon: Shapes },
-            { id: 'formula', label: 'Formula', icon: Sigma },
-            { id: 'mindmap', label: 'Mind Map', icon: Network }
-          ].map(tool => {
-            const Icon = tool.icon;
-            const isActive = activePanel === tool.id;
-            return (
-              <button
-                key={tool.id}
-                onClick={() => handleToolClick(tool.id)}
-                className={`adv-nav-tool-btn ${isActive ? 'active' : ''}`}
-                title={tool.label}
-              >
-                <Icon size={18} />
-                <span>{tool.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        <div className="adv-topbar-center" />
         <div className="adv-topbar-right">
           <button className="adv-btn adv-btn-secondary" style={{ marginRight: '0.5rem' }}><Play size={16} /> Present</button>
           <button 
@@ -1891,6 +1864,7 @@ export default function MainEditor() {
 
         {/* ── Side Nav ── */}
         <nav className="adv-side-nav">
+          {/* Section: Design/Main Tab Buttons */}
           {[
             { id: 'templates', icon: Layout,    label: 'Design'  },
             { id: 'uploads',   icon: ImageIcon, label: 'Images'  },
@@ -1900,10 +1874,81 @@ export default function MainEditor() {
             <button
               key={tab.id}
               className={`adv-nav-item ${activeSidebarTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveSidebarTab(tab.id)}
+              onClick={() => {
+                setActiveSidebarTab(prev => prev === tab.id ? null : tab.id);
+                setActivePanel(null);
+              }}
             >
-              <tab.icon size={24} />
+              <tab.icon size={20} />
               <span>{tab.label}</span>
+            </button>
+          ))}
+
+          {/* Section Divider */}
+          <div style={{ width: '70%', height: '1px', background: 'rgba(255,255,255,0.12)', margin: '8px 0' }} />
+
+          {/* Group: Content */}
+          <div style={{ fontSize: '0.58rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', alignSelf: 'center', margin: '4px 0 2px' }}>Content</div>
+          {[
+            { id: 'text', icon: Type, label: 'Text' },
+            { id: 'table', icon: Table, label: 'Table' },
+            { id: 'chart', icon: BarChart3, label: 'Chart' },
+          ].map(tool => (
+            <button
+              key={tool.id}
+              className={`adv-nav-item ${activePanel === tool.id ? 'active' : ''}`}
+              onClick={() => {
+                setActivePanel(prev => prev === tool.id ? null : tool.id);
+                setActiveSidebarTab(null);
+              }}
+            >
+              <tool.icon size={20} />
+              <span>{tool.label}</span>
+            </button>
+          ))}
+
+          {/* Section Divider */}
+          <div style={{ width: '70%', height: '1px', background: 'rgba(255,255,255,0.12)', margin: '8px 0' }} />
+
+          {/* Group: Layout */}
+          <div style={{ fontSize: '0.58rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', alignSelf: 'center', margin: '4px 0 2px' }}>Layout</div>
+          {[
+            { id: 'autolayout', icon: LayoutGrid, label: 'Auto Layout' },
+            { id: 'formula', icon: Sigma, label: 'Formula' },
+            { id: 'mindmap', icon: Network, label: 'Mind Map' },
+          ].map(tool => (
+            <button
+              key={tool.id}
+              className={`adv-nav-item ${activePanel === tool.id ? 'active' : ''}`}
+              onClick={() => {
+                setActivePanel(prev => prev === tool.id ? null : tool.id);
+                setActiveSidebarTab(null);
+              }}
+            >
+              <tool.icon size={20} />
+              <span>{tool.label}</span>
+            </button>
+          ))}
+
+          {/* Section Divider */}
+          <div style={{ width: '70%', height: '1px', background: 'rgba(255,255,255,0.12)', margin: '8px 0' }} />
+
+          {/* Group: Resources */}
+          <div style={{ fontSize: '0.58rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', alignSelf: 'center', margin: '4px 0 2px' }}>Resources</div>
+          {[
+            { id: 'asset', icon: Package, label: 'Assets' },
+            { id: 'media', icon: Play, label: 'Media' },
+          ].map(tool => (
+            <button
+              key={tool.id}
+              className={`adv-nav-item ${activePanel === tool.id ? 'active' : ''}`}
+              onClick={() => {
+                setActivePanel(prev => prev === tool.id ? null : tool.id);
+                setActiveSidebarTab(null);
+              }}
+            >
+              <tool.icon size={20} />
+              <span>{tool.label}</span>
             </button>
           ))}
         </nav>
