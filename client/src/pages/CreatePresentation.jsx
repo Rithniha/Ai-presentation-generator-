@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { getGuestSessionId } from '../services/auth';
@@ -29,6 +29,13 @@ const THEMES = [
 
 const PIE_COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
+const ORGANIC_BLOBS = [
+  { id: 1, size: 380, top: '5%', left: '8%', bg: 'radial-gradient(circle at 35% 35%, rgba(233, 213, 255, 0.7) 0%, rgba(192, 132, 252, 0.45) 70%, rgba(192, 132, 252, 0.15) 100%)', animClass: 'blob-morph-lilac' },
+  { id: 2, size: 480, top: '38%', left: '60%', bg: 'radial-gradient(circle at 35% 35%, rgba(204, 251, 241, 0.7) 0%, rgba(153, 246, 228, 0.45) 70%, rgba(153, 246, 228, 0.15) 100%)', animClass: 'blob-morph-aqua' },
+  { id: 3, size: 320, top: '70%', left: '5%', bg: 'radial-gradient(circle at 35% 35%, rgba(255, 237, 213, 0.7) 0%, rgba(254, 215, 170, 0.45) 70%, rgba(254, 215, 170, 0.15) 100%)', animClass: 'blob-morph-peach' },
+  { id: 4, size: 420, top: '-8%', left: '46%', bg: 'radial-gradient(circle at 35% 35%, rgba(252, 231, 243, 0.7) 0%, rgba(251, 207, 232, 0.45) 70%, rgba(251, 207, 232, 0.15) 100%)', animClass: 'blob-morph-pink' }
+];
+
 export default function CreatePresentation() {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
@@ -55,6 +62,28 @@ export default function CreatePresentation() {
   const [loading, setLoading] = useState(false);
   const [warmingUp, setWarmingUp] = useState(false);
   const [warmupTimer, setWarmupTimer] = useState(0);
+
+  const cardRef = useRef(null);
+
+  // Mouse Move Tilt handlers
+  const handleMouseMove = (e) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = ((centerY - y) / centerY) * 5; // Max 5 deg tilt
+    const rotateY = ((x - centerX) / centerX) * 5;
+    card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale(1.01)`;
+  };
+
+  const handleMouseLeave = () => {
+    const card = cardRef.current;
+    if (!card) return;
+    card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
+  };
 
   // File Upload parsing logic
   const parseSheetText = (text) => {
@@ -214,6 +243,23 @@ export default function CreatePresentation() {
 
   return (
     <div className="create-page-container">
+      {/* Translucent Glass Bubbles Background */}
+      <div className="glass-bubbles-container">
+        {ORGANIC_BLOBS.map(b => (
+          <div 
+            key={b.id}
+            className={`glass-bubble ${b.animClass}`}
+            style={{
+              width: `${b.size}px`,
+              height: `${b.size}px`,
+              top: b.top,
+              left: b.left,
+              background: b.bg
+            }}
+          />
+        ))}
+      </div>
+
       {/* Sticky Header */}
       <header className="create-header">
         <Link to="/" className="create-logo">
@@ -233,7 +279,13 @@ export default function CreatePresentation() {
           <p>Provide title specifications, custom requirements, and charts to generate tailor-made slides.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="create-form-card">
+        <form 
+          ref={cardRef}
+          onSubmit={handleSubmit} 
+          className="create-form-card"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
           
           {/* Section 1: Presentation Info */}
           <div>

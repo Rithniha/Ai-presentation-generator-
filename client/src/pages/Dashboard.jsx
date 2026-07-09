@@ -11,6 +11,7 @@ import {
   Play,
   Settings
 } from 'lucide-react';
+import FloatingBubbles from '../components/FloatingBubbles';
 import '../styles/Dashboard.css';
 
 export default function Dashboard() {
@@ -39,6 +40,7 @@ export default function Dashboard() {
 
   return (
     <div className="dash-container">
+      <FloatingBubbles />
       {/* Sidebar */}
       <aside className="dash-sidebar">
         <div className="dash-brand" onClick={() => navigate('/')}>

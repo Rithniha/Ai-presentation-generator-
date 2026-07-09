@@ -1,16 +1,27 @@
 /* Create Presentation Page Styles */
 .create-page-container {
+  position: relative;
   min-height: 100vh;
-  background-color: #fafafc;
-  background-image: 
-    radial-gradient(circle at top right, rgba(99, 102, 241, 0.04) 0%, transparent 60%),
-    radial-gradient(circle at bottom left, rgba(8, 145, 178, 0.03) 0%, transparent 50%),
-    radial-gradient(rgba(15, 23, 42, 0.015) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 20px 20px;
+  background: linear-gradient(135deg, #fafbfe, #f5f6ff, #f0fdfa, #fdf4ff, #f8fafc);
+  background-size: 400% 400%;
+  animation: meshGradient 25s ease infinite;
   display: flex;
   flex-direction: column;
   color: #0f172a;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+@keyframes meshGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .create-header {
@@ -49,10 +60,12 @@
 }
 
 .create-content-wrapper {
+  position: relative;
   max-width: 900px;
   width: 100%;
   margin: 2.5rem auto;
   padding: 0 1.5rem;
+  z-index: 1;
 }
 
 .create-title-block {
@@ -74,17 +87,27 @@
 }
 
 .create-form-card {
-  background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 28px;
   box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.01),
-    0 10px 40px -10px rgba(0, 0, 0, 0.03),
-    0 20px 80px -20px rgba(79, 70, 229, 0.04);
+    0 4px 30px rgba(0, 0, 0, 0.01),
+    0 16px 40px -10px rgba(79, 70, 229, 0.06);
   padding: 3rem;
   display: flex;
   flex-direction: column;
   gap: 2.25rem;
+  transform-style: preserve-3d;
+  transform: perspective(1000px);
+  transition: transform 0.15s ease-out, box-shadow 0.3s ease;
+}
+
+.create-form-card:hover {
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.03),
+    0 32px 80px -16px rgba(79, 70, 229, 0.12);
 }
 
 .create-section-title {
@@ -112,8 +135,9 @@
 
 .create-input {
   width: 100%;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: rgba(248, 250, 252, 0.55);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(226, 232, 240, 0.7);
   border-radius: 10px;
   padding: 0.85rem 1rem;
   font-size: 0.95rem;
@@ -148,12 +172,13 @@
 }
 
 .role-card {
-  border: 2px solid #e2e8f0;
+  border: 2px solid rgba(226, 232, 240, 0.7);
   border-radius: 12px;
   padding: 1.25rem;
   text-align: center;
   cursor: pointer;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(4px);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
@@ -164,11 +189,12 @@
 .role-card:hover {
   border-color: #cbd5e1;
   transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .role-card.active {
   border-color: #4f46e5;
-  background: rgba(79, 70, 229, 0.04);
+  background: rgba(79, 70, 229, 0.05);
 }
 
 .role-icon {
@@ -422,4 +448,120 @@
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   margin-top: 1rem;
+}
+
+/* Glass Bubbles Background styling */
+.glass-bubbles-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-bubble {
+  position: absolute;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  filter: blur(28px) brightness(1.03); /* noticeable glow + clear organic shape */
+  opacity: 0.6;
+  box-shadow: 
+    inset -15px -15px 40px rgba(0, 0, 0, 0.02),
+    inset 15px 15px 40px rgba(255, 255, 255, 0.55),
+    0 20px 50px rgba(99, 102, 241, 0.05);
+  pointer-events: none;
+}
+
+.blob-morph-lilac {
+  animation: morphLilac 28s infinite ease-in-out;
+}
+
+.blob-morph-aqua {
+  animation: morphAqua 34s infinite ease-in-out;
+}
+
+.blob-morph-peach {
+  animation: morphPeach 38s infinite ease-in-out;
+}
+
+.blob-morph-pink {
+  animation: morphPink 30s infinite ease-in-out;
+}
+
+@keyframes morphLilac {
+  0% {
+    border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  33% {
+    border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%;
+    transform: translate(45px, -35px) rotate(120deg) scale(1.06);
+  }
+  66% {
+    border-radius: 30% 70% 40% 60% / 50% 60% 40% 50%;
+    transform: translate(-35px, 45px) rotate(240deg) scale(0.94);
+  }
+  100% {
+    border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+    transform: translate(0, 0) rotate(360deg) scale(1);
+  }
+}
+
+@keyframes morphAqua {
+  0% {
+    border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  33% {
+    border-radius: 30% 70% 70% 30% / 50% 30% 70% 50%;
+    transform: translate(-45px, 35px) rotate(-120deg) scale(0.95);
+  }
+  66% {
+    border-radius: 70% 30% 40% 60% / 60% 40% 60% 40%;
+    transform: translate(35px, -45px) rotate(-240deg) scale(1.05);
+  }
+  100% {
+    border-radius: 50% 50% 30% 70% / 50% 60% 40% 50%;
+    transform: translate(0, 0) rotate(-360deg) scale(1);
+  }
+}
+
+@keyframes morphPeach {
+  0% {
+    border-radius: 60% 40% 60% 40% / 40% 60% 40% 60%;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  33% {
+    border-radius: 40% 60% 30% 70% / 60% 30% 70% 40%;
+    transform: translate(35px, 45px) rotate(90deg) scale(1.04);
+  }
+  66% {
+    border-radius: 70% 30% 50% 50% / 30% 70% 30% 70%;
+    transform: translate(-45px, -35px) rotate(180deg) scale(0.96);
+  }
+  100% {
+    border-radius: 60% 40% 60% 40% / 40% 60% 40% 60%;
+    transform: translate(0, 0) rotate(360deg) scale(1);
+  }
+}
+
+@keyframes morphPink {
+  0% {
+    border-radius: 45% 55% 45% 55% / 55% 45% 55% 45%;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  33% {
+    border-radius: 55% 45% 70% 30% / 30% 70% 40% 60%;
+    transform: translate(-35px, -55px) rotate(-90deg) scale(1.05);
+  }
+  66% {
+    border-radius: 35% 65% 35% 65% / 65% 35% 65% 35%;
+    transform: translate(45px, 35px) rotate(-180deg) scale(0.95);
+  }
+  100% {
+    border-radius: 45% 55% 45% 55% / 55% 45% 55% 45%;
+    transform: translate(0, 0) rotate(-360deg) scale(1);
+  }
 }

@@ -4,16 +4,21 @@
   background-color: #f8fafc;
   font-family: 'Inter', sans-serif;
   color: #0f172a;
+  position: relative;
+  overflow: hidden;
 }
 
 /* Sidebar */
 .dash-sidebar {
   width: 260px;
-  background-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-right: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
+  z-index: 10;
 }
 
 .dash-brand {
@@ -103,11 +108,15 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+  z-index: 10;
 }
 
 .dash-header {
   height: 72px;
-  background-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
@@ -213,7 +222,9 @@
 }
 
 .dash-card {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   overflow: hidden;
@@ -295,7 +306,9 @@
   justify-content: center;
   padding: 4rem 2rem;
   text-align: center;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border-radius: 12px;
   border: 1px dashed #cbd5e1;
 }
@@ -322,4 +335,86 @@
 .dash-empty-state p {
   color: #64748b;
   margin: 0;
+}
+
+/* Floating Bubbles Background */
+.bubble-bg-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bubble-element {
+  position: absolute;
+  bottom: -60px;
+  border-radius: 50%;
+  border: 0.75px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 
+    inset 2.5px 2.5px 4px rgba(255, 255, 255, 0.95),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.02),
+    0 0 12px 1.5px var(--halo-color);
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+  animation: floatUp linear infinite, sway ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+.bubble-element::before {
+  content: '';
+  position: absolute;
+  top: 15%;
+  left: 15%;
+  width: 25%;
+  height: 25%;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.bubble-element::after {
+  content: '';
+  position: absolute;
+  bottom: 15%;
+  right: 15%;
+  width: 15%;
+  height: 15%;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: bubbleSparkle 3s ease-in-out infinite alternate;
+}
+
+@keyframes bubbleSparkle {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-120vh) rotate(360deg);
+  }
+}
+
+@keyframes sway {
+  0% {
+    margin-left: 0px;
+  }
+  100% {
+    margin-left: var(--drift-amount);
+  }
 }
