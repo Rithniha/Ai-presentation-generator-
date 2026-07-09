@@ -1886,25 +1886,6 @@ export default function MainEditor() {
         </div>
       )}
 
-      {/* ── Format Toolbar ── */}
-      <div className="adv-format-toolbar">
-        <select className="adv-font-select">
-          <option>Inter</option><option>Roboto</option><option>Playfair Display</option><option>Merriweather</option>
-        </select>
-        <div className="adv-font-size-control">
-          <button>−</button><span>24</span><button>+</button>
-        </div>
-        <div className="adv-divider" />
-        <button className="adv-format-btn" title="Bold"><Bold size={16} /></button>
-        <button className="adv-format-btn" title="Italic"><Italic size={16} /></button>
-        <button className="adv-format-btn" title="Underline"><Underline size={16} /></button>
-        <div className="adv-divider" />
-        <button className="adv-format-btn"><AlignLeft size={16} /></button>
-        <button className="adv-format-btn"><AlignCenter size={16} /></button>
-        <button className="adv-format-btn"><AlignRight size={16} /></button>
-        <div className="adv-divider" />
-        <button className="adv-format-btn" title="AI Rewrite"><Sparkles size={16} color="#8b5cf6" /></button>
-      </div>
 
       <div className="adv-workspace">
 
