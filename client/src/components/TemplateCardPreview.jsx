@@ -629,7 +629,7 @@ const SLIDE_DESIGNS = {
       <text x="54" y="172" fontFamily="Georgia,serif" fontSize="10.5" fill="#292524" opacity="0.48">Holistic Wellness Solutions</text>
       <text x="54" y="188" fontFamily="Georgia,serif" fontSize="10.5" fill="#292524" opacity="0.38">for Mind, Body &amp; Soul</text>
       {[{t:'Meditation',w:78},{t:'Yoga',w:52},{t:'Therapy',w:68}].map(({t,w},i)=>(
-        <g key={i}><rect x={54+i*90} y="210" width={w} height="20" rx="10" fill="#78716c" opacity="0.09" stroke="#78716c" strokeWidth="0.7" opacity="0.28"/>
+        <g key={i}><rect x={54+i*90} y="210" width={w} height="20" rx="10" fill="#78716c" stroke="#78716c" strokeWidth="0.7" opacity="0.28"/>
         <text x={54+i*90+10} y="224" fontFamily="Georgia,serif" fontSize="8" fill="#292524" opacity="0.48">{t}</text></g>
       ))}
     </svg>
@@ -759,17 +759,134 @@ const SLIDE_DESIGNS = {
       <text x="46" y="264" fontFamily="Arial,sans-serif" fontSize="7.5" fill="#2e1065" opacity="0.32" letterSpacing="2">CREATIVE CONCEPT DECK · 2025</text>
     </svg>
   ),
+};
 
+const DYNAMIC_SLIDE_GENERATORS = {
+  content: (t) => {
+    return (
+      <svg viewBox="0 0 480 270" style={S}>
+        <rect width="480" height="270" fill={t.bg}/>
+        <rect x="0" y="0" width="480" height="4" fill={t.accent}/>
+        <rect x="0" y="0" width="4" height="270" fill={t.accent}/>
+        <text x="30" y="40" fontFamily={t.font || 'Inter'} fontWeight="700" fontSize="18" fill={t.text}>{t.name} Overview</text>
+        <text x="30" y="52" fontFamily={t.font || 'Inter'} fontWeight="400" fontSize="8" fill={t.accent} letterSpacing="1">EXECUTIVE SUMMARY</text>
+        {[0, 1, 2].map((i) => (
+          <g key={i} transform={`translate(30, ${70 + i * 54})`}>
+            <rect x="0" y="0" width="420" height="44" rx="6" fill={t.card} stroke={`${t.accent}20`} strokeWidth="1" />
+            <circle cx="20" cy="22" r="10" fill={t.accent} opacity="0.15" />
+            <text x="20" y="25" fontFamily={t.font || 'Inter'} fontWeight="700" fontSize="9" fill={t.text} textAnchor="middle">{i + 1}</text>
+            <text x="40" y="18" fontFamily={t.font || 'Inter'} fontWeight="700" fontSize="10" fill={t.text}>Key Performance Indicator {i + 1}</text>
+            <rect x="40" y="24" width="280" height="3" rx="1.5" fill={t.text} opacity="0.35" />
+            <rect x="40" y="30" width="180" height="3" rx="1.5" fill={t.text} opacity="0.18" />
+          </g>
+        ))}
+      </svg>
+    );
+  },
+  timeline: (t) => {
+    return (
+      <svg viewBox="0 0 480 270" style={S}>
+        <rect width="480" height="270" fill={t.bg}/>
+        <rect x="0" y="0" width="480" height="4" fill={t.accent}/>
+        <text x="30" y="40" fontFamily={t.font || 'Inter'} fontWeight="700" fontSize="18" fill={t.text}>Project Roadmap & Timeline</text>
+        <text x="30" y="52" fontFamily={t.font || 'Inter'} fontWeight="400" fontSize="8" fill={t.accent} letterSpacing="1">DELIVERY MILESTONES</text>
+        <line x1="50" y1="140" x2="430" y2="140" stroke={t.text} strokeWidth="2" opacity="0.2" />
+        <line x1="50" y1="140" x2="240" y2="140" stroke={t.accent} strokeWidth="3" />
+        {[0, 1, 2, 3].map((i) => {
+          const x = 70 + i * 110;
+          const isActive = i <= 1;
+          return (
+            <g key={i} transform={`translate(${x}, 0)`}>
+              <circle cx="0" cy="140" r="8" fill={t.bg} stroke={isActive ? t.accent : t.text} strokeWidth="3" />
+              <circle cx="0" cy="140" r="4" fill={isActive ? t.accent : t.text} opacity={isActive ? 1 : 0.4} />
+              <rect x="-45" y={i % 2 === 0 ? 70 : 160} width="90" height="50" rx="6" fill={t.card} stroke={isActive ? `${t.accent}40` : 'transparent'} strokeWidth="1" />
+              <text x="0" y={i % 2 === 0 ? 88 : 178} fontFamily={t.font || 'Inter'} fontWeight="700" fontSize="9" fill={t.text} textAnchor="middle">Q{i + 1} Launch</text>
+              <text x="0" y={i % 2 === 0 ? 102 : 192} fontFamily={t.font || 'Inter'} fontSize="8" fill={t.text} opacity="0.5" textAnchor="middle">Milestone {i + 1}</text>
+              <rect x="-30" y={i % 2 === 0 ? 110 : 200} width="60" height="2.5" rx="1" fill={t.accent} opacity="0.3" />
+            </g>
+          );
+        })}
+      </svg>
+    );
+  },
+  chart: (t) => {
+    return (
+      <svg viewBox="0 0 480 270" style={S}>
+        <rect width="480" height="270" fill={t.bg}/>
+        <rect x="0" y="0" width="480" height="4" fill={t.accent}/>
+        <text x="30" y="40" fontFamily={t.font || 'Inter'} fontWeight="700" fontSize="18" fill={t.text}>Growth & Performance</text>
+        <text x="30" y="52" fontFamily={t.font || 'Inter'} fontWeight="400" fontSize="8" fill={t.accent} letterSpacing="1">ANALYTICS & METRICS</text>
+        <g transform="translate(60, 90)">
+          {[0, 25, 50, 75, 100].map((val, idx) => {
+            const yPos = 120 - val * 1.2;
+            return (
+              <g key={idx}>
+                <line x1="0" y1={yPos} x2="180" y2={yPos} stroke={t.text} strokeWidth="0.5" opacity="0.1" />
+                <text x="-10" y={yPos + 3} fontFamily={t.font || 'Inter'} fontSize="7" fill={t.text} opacity="0.4" textAnchor="end">{val}%</text>
+              </g>
+            );
+          })}
+          <line x1="0" y1="0" x2="0" y2="120" stroke={t.text} strokeWidth="1" opacity="0.2" />
+          <line x1="0" y1="120" x2="180" y2="120" stroke={t.text} strokeWidth="1" opacity="0.2" />
+          {[35, 65, 80, 95].map((val, idx) => {
+            const barHeight = val * 1.2;
+            const xPos = 20 + idx * 40;
+            return (
+              <g key={idx}>
+                <rect x={xPos} y={120 - barHeight} width="20" height={barHeight} fill={t.accent} rx="2" opacity={0.6 + idx * 0.1} />
+                <text x={xPos + 10} y={115 - barHeight} fontFamily={t.font || 'Inter'} fontWeight="700" fontSize="8" fill={t.text} textAnchor="middle">{val}%</text>
+                <text x={xPos + 10} y="130" fontFamily={t.font || 'Inter'} fontSize="8" fill={t.text} opacity="0.5" textAnchor="middle">202{idx + 2}</text>
+              </g>
+            );
+          })}
+        </g>
+        <g transform="translate(340, 150)">
+          <circle cx="0" cy="0" r="45" fill="none" stroke={t.card} strokeWidth="10" />
+          <circle cx="0" cy="0" r="45" fill="none" stroke={t.accent} strokeWidth="10" 
+                  strokeDasharray="282.7" strokeDashoffset="62.2" strokeLinecap="round" transform="rotate(-90)" />
+          <text x="0" y="6" fontFamily={t.font || 'Inter'} fontWeight="900" fontSize="18" fill={t.text} textAnchor="middle">78%</text>
+          <text x="0" y="68" fontFamily={t.font || 'Inter'} fontWeight="700" fontSize="9" fill={t.text} textAnchor="middle">Target Achieved</text>
+          <text x="0" y="78" fontFamily={t.font || 'Inter'} fontSize="7" fill={t.text} opacity="0.5" textAnchor="middle">Q4 Fiscal Goal</text>
+        </g>
+      </svg>
+    );
+  },
+  closing: (t) => {
+    return (
+      <svg viewBox="0 0 480 270" style={S}>
+        <rect width="480" height="270" fill={t.bg}/>
+        <rect x="20" y="20" width="440" height="230" fill="none" stroke={t.accent} strokeWidth="1" opacity="0.2" rx="10"/>
+        <polygon points="400,20 460,20 460,80" fill={t.accent} opacity="0.15"/>
+        <polygon points="20,210 20,250 60,250" fill={t.accent} opacity="0.15"/>
+        <text x="240" y="115" fontFamily={t.font || 'Inter'} fontWeight="900" fontSize="36" fill={t.text} textAnchor="middle">Thank You</text>
+        <text x="240" y="135" fontFamily={t.font || 'Inter'} fontWeight="400" fontSize="10" fill={t.accent} letterSpacing="3" textAnchor="middle">QUESTIONS &amp; ANSWERS</text>
+        <rect x="190" y="145" width="100" height="2" fill={t.accent} opacity="0.5" />
+        <g transform="translate(240, 175)">
+          <text x="0" y="0" fontFamily={t.font || 'Inter'} fontSize="8.5" fill={t.text} opacity="0.6" textAnchor="middle">hello@deckflow.com  |  www.deckflow.com</text>
+          <text x="0" y="15" fontFamily={t.font || 'Inter'} fontSize="7.5" fill={t.text} opacity="0.4" textAnchor="middle">123 Presentation Way, Design Suite 101</text>
+        </g>
+      </svg>
+    );
+  }
 };
 
 /* ═══════════════════════════════════════════════════
    MAIN EXPORT — picks the right SVG per template
+   Supports cover, content, timeline, chart, closing
 ═══════════════════════════════════════════════════ */
-export default function TemplateCardPreview({ t }) {
-  const render = SLIDE_DESIGNS[t.id];
-  if (render) return render(t.id);
+export default function TemplateCardPreview({ t, slideType = 'cover' }) {
+  if (slideType === 'cover' || !slideType) {
+    const render = SLIDE_DESIGNS[t.id];
+    if (render) return render(t.id);
+  } else {
+    const renderSlide = DYNAMIC_SLIDE_GENERATORS[slideType];
+    if (renderSlide) {
+      return renderSlide(t);
+    }
+  }
 
   // Generic premium fallback for any future templates
+  const prefix = `fb-${t.id}-${slideType}`;
   return (
     <svg viewBox="0 0 480 270" style={S}>
       <defs>

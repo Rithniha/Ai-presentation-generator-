@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { UploadCloud, CheckCircle, RefreshCw, AlertCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { UploadCloud, CheckCircle, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
 import { getCompatibilityScore } from '../hooks/useTemplateFilters';
 
 const THEMES = ["Modern Minimal", "Corporate Navy", "Bold Startup", "Academic Light", "Tech Charcoal", "Marketing Coral"];
@@ -41,12 +41,22 @@ function generateAnalysis(fileName, fileSize) {
 
 export default function UploadTemplateSection({ onSelectUploadedTemplate, presentationState }) {
   const [dragActive, setDragActive] = useState(false);
-  const [status, setStatus] = useState('idle'); // idle, uploading, success, error
+  const [status, setStatus] = useState('idle'); // idle, uploading, parsing, success, error
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [statusText, setStatusText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [fileName, setFileName] = useState('');
+  const [fileSizeStr, setFileSizeStr] = useState('');
   const [analysis, setAnalysis] = useState(null);
 
   const fileInputRef = useRef(null);
+  const progressIntervalRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
+  }, []);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -61,6 +71,7 @@ export default function UploadTemplateSection({ onSelectUploadedTemplate, presen
   const validateAndUpload = (file) => {
     if (!file) return;
 
+    // File validation
     const validExtensions = ['.ppt', '.pptx', '.potx'];
     const lowerName = file.name.toLowerCase();
     const isValid = validExtensions.some(ext => lowerName.endsWith(ext));
@@ -71,28 +82,62 @@ export default function UploadTemplateSection({ onSelectUploadedTemplate, presen
       return;
     }
 
-    // Start simulated upload
+    // Size limit validation (e.g. 50MB)
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setErrorMsg('File too large. Maximum size is 50MB.');
+      setStatus('error');
+      return;
+    }
+
+    // Calculate file size string
+    const sizeKB = file.size / 1024;
+    const sizeStr = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB.toFixed(0)} KB`;
+    setFileSizeStr(sizeStr);
+
+    // Reset progress and errors
     setStatus('uploading');
+    setUploadProgress(0);
+    setStatusText('Uploading file...');
     setErrorMsg('');
     setFileName(file.name);
-    
-    setTimeout(() => {
-      setStatus('success');
-      const analysisData = generateAnalysis(file.name, file.size);
-      
-      // Calculate real compatibility score using shared getCompatibilityScore helper
-      const dummyTemplate = {
-        id: 'uploaded-temp',
-        name: `Custom (${analysisData.theme})`,
-        category: analysisData.audience === 'Student' || analysisData.audience === 'Professor' ? 'Education' : 'Business',
-        tags: ['Custom', analysisData.layout],
-        users: analysisData.audience,
-        font: 'Inter'
-      };
-      
-      analysisData.compatibilityScore = getCompatibilityScore(dummyTemplate, presentationState || {});
-      setAnalysis(analysisData);
-    }, 1800);
+
+    let progress = 0;
+    progressIntervalRef.current = setInterval(() => {
+      progress += 5;
+      if (progress <= 60) {
+        setUploadProgress(progress);
+        setStatusText(`Uploading template assets... ${progress}%`);
+      } else if (progress <= 90) {
+        setUploadProgress(progress);
+        setStatusText(`AI model analyzing slide layouts & color palettes... ${progress}%`);
+      } else if (progress < 100) {
+        setUploadProgress(progress);
+        setStatusText(`Optimizing theme parameters... ${progress}%`);
+      } else {
+        clearInterval(progressIntervalRef.current);
+        setUploadProgress(100);
+        setStatusText('Analyzing template structure... Complete!');
+        
+        setTimeout(() => {
+          setStatus('success');
+          const analysisData = generateAnalysis(file.name, file.size);
+          
+          // Calculate real compatibility score using shared helper
+          const dummyTemplate = {
+            id: 'uploaded-temp',
+            name: `Custom (${analysisData.theme})`,
+            category: analysisData.audience === 'Student' || analysisData.audience === 'Professor' ? 'Education' : 'Business',
+            tags: ['Custom', analysisData.layout],
+            users: analysisData.audience,
+            font: 'Inter'
+          };
+          
+          analysisData.compatibilityScore = getCompatibilityScore(dummyTemplate, presentationState || {});
+          setAnalysis(analysisData);
+        }, 300);
+      }
+    }, 90);
   };
 
   const handleDrop = (e) => {
@@ -118,6 +163,8 @@ export default function UploadTemplateSection({ onSelectUploadedTemplate, presen
   const handleReset = () => {
     setStatus('idle');
     setFileName('');
+    setFileSizeStr('');
+    setUploadProgress(0);
     setAnalysis(null);
     setErrorMsg('');
   };
@@ -125,21 +172,27 @@ export default function UploadTemplateSection({ onSelectUploadedTemplate, presen
   const handleUseTemplate = () => {
     if (!analysis) return;
     
-    // Call the parent handler to select the simulated template
     onSelectUploadedTemplate({
       id: `uploaded-${fileName.replace(/\s+/g, '-').toLowerCase()}`,
       name: `Custom (${analysis.theme})`,
       category: 'Uploaded',
       tags: ['Custom', analysis.layout],
       desc: `Simulated template based on uploaded file "${fileName}".`,
-      users: 'Custom User',
+      users: analysis.audience,
       philosophy: `Custom layout matching ${analysis.theme} theme.`,
       bg: analysis.colors[0],
       accent: analysis.colors[1],
-      text: '#ffffff',
+      text: analysis.colors[0] === '#ffffff' ? '#0f172a' : '#ffffff',
       secondary: 'rgba(255,255,255,0.12)',
       card: 'rgba(255,255,255,0.1)',
-      font: 'Inter'
+      font: 'Inter',
+      industry: analysis.audience === 'Business Professional' ? 'Corporate' : 'Education',
+      style: analysis.layout.replace('-based', '').replace('-first', ''),
+      animated: true,
+      aspectRatio: '16:9',
+      slideCount: analysis.slideCount,
+      lastUpdated: 'Just now',
+      badges: ['Custom Upload']
     });
   };
 
@@ -186,7 +239,7 @@ export default function UploadTemplateSection({ onSelectUploadedTemplate, presen
             <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#4f46e5' }}>Choose File</span>
             <span style={{ fontSize: '0.85rem', color: '#64748b', marginLeft: '4px' }}>or drag PowerPoint file here</span>
           </div>
-          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Supported formats: .ppt, .pptx, .potx</span>
+          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Supported formats: <b>.ppt, .pptx, .potx</b> (Max size: 50MB)</span>
 
           {status === 'error' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontSize: '0.8rem', fontWeight: 600, marginTop: '0.5rem' }}>
@@ -205,12 +258,20 @@ export default function UploadTemplateSection({ onSelectUploadedTemplate, presen
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '1rem',
+          gap: '1.25rem',
         }}>
           <div className="ts-upload-spinner" />
-          <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>
-            Uploading and analyzing "{fileName}"...
-          </span>
+          <div style={{ width: '100%', maxWidth: '360px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#64748b', marginBottom: '6px', fontWeight: 600 }}>
+              <span>Status: {statusText}</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            {/* Custom Progress Bar */}
+            <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
+              <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'linear-gradient(90deg, #4f46e5, #818cf8)', borderRadius: '999px', transition: 'width 0.1s ease' }} />
+            </div>
+          </div>
+          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Uploading "{fileName}" ({fileSizeStr})</span>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -226,7 +287,7 @@ export default function UploadTemplateSection({ onSelectUploadedTemplate, presen
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#065f46', fontSize: '0.88rem', fontWeight: 600 }}>
               <CheckCircle size={16} />
-              <span>Successfully uploaded "{fileName}"</span>
+              <span>Successfully uploaded "{fileName}" ({fileSizeStr})</span>
             </div>
             <button 
               onClick={handleReset}
@@ -255,50 +316,93 @@ export default function UploadTemplateSection({ onSelectUploadedTemplate, presen
               padding: '1.5rem',
               boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#4f46e5', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                  🤖 AI Template Analysis
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#4f46e5', letterSpacing: '0.05em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Sparkles size={14} /> 🤖 AI Template Analysis Complete
                 </span>
                 <span className="ts-card-tag" style={{ background: 'rgba(79, 70, 229, 0.08)', color: '#4f46e5', fontWeight: 700 }}>
                   ⚡ {analysis.compatibilityScore}% Compatibility
                 </span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Detected Theme</div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>{analysis.theme}</div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Primary Colors</div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    {analysis.colors.map((c, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: c, border: '1px solid #cbd5e1' }} title={c} />
-                        <span style={{ fontSize: '0.7rem', color: '#64748b', fontFamily: 'monospace' }}>{c}</span>
-                      </div>
-                    ))}
+              <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                {/* Visual Thumbnail Preview Box */}
+                <div style={{
+                  width: '140px',
+                  aspectRatio: '16/9',
+                  borderRadius: '8px',
+                  background: analysis.colors[0],
+                  position: 'relative',
+                  overflow: 'hidden',
+                  border: '1px solid #cbd5e1',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  padding: '10px',
+                  flexShrink: 0
+                }}>
+                  {/* Accent strip */}
+                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: analysis.colors[1] }} />
+                  
+                  <div>
+                    <div style={{ fontSize: '5.5px', fontWeight: 900, color: analysis.colors[1], letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                      {analysis.audience.split(' ')[0]} THEME
+                    </div>
+                    <div style={{ fontSize: '8.5px', fontWeight: 900, color: analysis.colors[0] === '#ffffff' ? '#0f172a' : '#ffffff', marginTop: '3px', lineHeight: 1.1 }}>
+                      {analysis.theme}
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                    <div style={{ fontSize: '5px', color: analysis.colors[0] === '#ffffff' ? '#64748b' : '#ffffff', opacity: 0.6 }}>
+                      {analysis.layout}
+                    </div>
+                    <div style={{ display: 'flex', gap: '2px' }}>
+                      {analysis.colors.map((c, i) => (
+                        <div key={i} style={{ width: '4px', height: '4px', borderRadius: '50%', background: c, border: '0.2px solid #e2e8f0' }} />
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Slide Count</div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>{analysis.slideCount} Slides</div>
-                </div>
+                {/* Analysis Info */}
+                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Detected Theme</div>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>{analysis.theme}</div>
+                  </div>
 
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Layout Style</div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>{analysis.layout}</div>
-                </div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Primary Colors</div>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {analysis.colors.map((c, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: c, border: '1px solid #cbd5e1' }} title={c} />
+                          <span style={{ fontSize: '0.68rem', color: '#64748b', fontFamily: 'monospace' }}>{c}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Recommended Audience</div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>{analysis.audience}</div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Slide Count</div>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>{analysis.slideCount} Slides</div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Layout Style</div>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>{analysis.layout}</div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Recommended Audience</div>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>{analysis.audience}</div>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9', paddingTop: '1rem', marginTop: '1.25rem' }}>
                 <button
                   className="ts-preview-select"
                   onClick={handleUseTemplate}

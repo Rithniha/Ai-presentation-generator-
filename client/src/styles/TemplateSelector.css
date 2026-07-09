@@ -828,3 +828,52 @@
 .ts-analysis-panel {
   animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Modal slide navigation hover */
+.ts-modal-nav-btn:hover {
+  background: #ffffff !important;
+  color: #4f46e5 !important;
+  transform: translateY(-50%) scale(1.08) !important;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2) !important;
+}
+
+/* Scrollbar styling for horizontal list elements */
+.ts-recent-row::-webkit-scrollbar,
+div[style*="overflow-x: auto"]::-webkit-scrollbar {
+  height: 5px;
+}
+
+.ts-recent-row::-webkit-scrollbar-track,
+div[style*="overflow-x: auto"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ts-recent-row::-webkit-scrollbar-thumb,
+div[style*="overflow-x: auto"]::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+
+.ts-recent-row::-webkit-scrollbar-thumb:hover,
+div[style*="overflow-x: auto"]::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Custom advanced filters selector animations */
+select {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+select:focus {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+}
+
+/* Custom Checkbox scale-in */
+input[type="checkbox"] {
+  transition: transform 0.1s ease;
+}
+
+input[type="checkbox"]:active {
+  transform: scale(0.9);
+}

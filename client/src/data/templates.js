@@ -13,6 +13,13 @@ export const TEMPLATES = [
     secondary: 'rgba(255,255,255,0.12)',
     card: 'rgba(255,255,255,0.1)',
     font: 'Sora',
+    industry: 'Corporate',
+    style: 'Corporate',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 15,
+    lastUpdated: '2 days ago',
+    badges: ['⭐ Premium', '🏆 Editor\'s Pick']
   },
   {
     id: 'startup',
@@ -28,6 +35,13 @@ export const TEMPLATES = [
     secondary: 'rgba(99,102,241,0.15)',
     card: 'rgba(99,102,241,0.12)',
     font: 'Outfit',
+    industry: 'Startup',
+    style: 'Modern',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 12,
+    lastUpdated: '1 week ago',
+    badges: ['🔥 Trending', '🚀 Startup']
   },
   {
     id: 'academic',
@@ -43,6 +57,13 @@ export const TEMPLATES = [
     secondary: 'rgba(146,64,14,0.1)',
     card: 'rgba(146,64,14,0.07)',
     font: 'Merriweather',
+    industry: 'Education',
+    style: 'Classic',
+    animated: false,
+    aspectRatio: '16:9',
+    slideCount: 20,
+    lastUpdated: '3 days ago',
+    badges: ['📚 Academic']
   },
   {
     id: 'technology',
@@ -58,6 +79,13 @@ export const TEMPLATES = [
     secondary: 'rgba(6,182,212,0.1)',
     card: 'rgba(6,182,212,0.08)',
     font: 'Fira Code',
+    industry: 'Tech',
+    style: 'Dark',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 18,
+    lastUpdated: 'Yesterday',
+    badges: ['🤖 AI Generated', '🆕']
   },
   {
     id: 'marketing',
@@ -73,13 +101,20 @@ export const TEMPLATES = [
     secondary: 'rgba(225,29,116,0.08)',
     card: 'rgba(225,29,116,0.06)',
     font: 'Inter',
+    industry: 'Marketing',
+    style: 'Creative',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 14,
+    lastUpdated: '5 days ago',
+    badges: ['🔥 Trending']
   },
   {
     id: 'finance',
     name: 'Finance',
     category: 'Business',
     tags: ['Finance', 'Banking'],
-    desc: 'Conservative emerald palette conveying reliability for financial models and reports.',
+    desc: '',
     users: 'CFOs, Accountants, Analysts',
     philosophy: 'Trust, stability, data clarity',
     bg: '#0d2818',
@@ -88,6 +123,13 @@ export const TEMPLATES = [
     secondary: 'rgba(16,185,129,0.1)',
     card: 'rgba(16,185,129,0.08)',
     font: 'Inter',
+    industry: 'Finance',
+    style: 'Corporate',
+    animated: false,
+    aspectRatio: '16:9',
+    slideCount: 16,
+    lastUpdated: '4 days ago',
+    badges: ['⭐ Premium']
   },
   {
     id: 'healthcare',
@@ -103,6 +145,13 @@ export const TEMPLATES = [
     secondary: 'rgba(2,132,199,0.08)',
     card: 'rgba(2,132,199,0.06)',
     font: 'Inter',
+    industry: 'Healthcare',
+    style: 'Minimal',
+    animated: false,
+    aspectRatio: '16:9',
+    slideCount: 15,
+    lastUpdated: '1 month ago',
+    badges: ['🏥 Healthcare']
   },
   {
     id: 'creative',
@@ -118,6 +167,13 @@ export const TEMPLATES = [
     secondary: 'rgba(217,119,6,0.1)',
     card: 'rgba(217,119,6,0.08)',
     font: 'Outfit',
+    industry: 'Creative',
+    style: 'Creative',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 11,
+    lastUpdated: '2 weeks ago',
+    badges: ['🎨 Creative']
   },
   {
     id: 'minimal',
@@ -133,6 +189,13 @@ export const TEMPLATES = [
     secondary: 'rgba(51,65,85,0.06)',
     card: 'rgba(51,65,85,0.04)',
     font: 'Inter',
+    industry: 'General',
+    style: 'Minimal',
+    animated: false,
+    aspectRatio: '16:9',
+    slideCount: 10,
+    lastUpdated: '6 days ago',
+    badges: ['🏆 Editor\'s Pick']
   },
   {
     id: 'dark',
@@ -148,6 +211,13 @@ export const TEMPLATES = [
     secondary: 'rgba(167,139,250,0.1)',
     card: 'rgba(167,139,250,0.08)',
     font: 'Inter',
+    industry: 'Tech',
+    style: 'Dark',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 13,
+    lastUpdated: 'Yesterday',
+    badges: ['🔥 Trending']
   },
   {
     id: 'neomemphis',
@@ -163,6 +233,13 @@ export const TEMPLATES = [
     secondary: 'rgba(217,70,239,0.08)',
     card: 'rgba(217,70,239,0.05)',
     font: 'Outfit',
+    industry: 'Creative',
+    style: 'Creative',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 17,
+    lastUpdated: '3 weeks ago',
+    badges: ['🎨 Creative', '🆕']
   },
   {
     id: 'ecogreen',
@@ -178,6 +255,13 @@ export const TEMPLATES = [
     secondary: 'rgba(22,163,74,0.08)',
     card: 'rgba(22,163,74,0.05)',
     font: 'Inter',
+    industry: 'Healthcare',
+    style: 'Minimal',
+    animated: false,
+    aspectRatio: '16:9',
+    slideCount: 12,
+    lastUpdated: '2 months ago',
+    badges: ['🆕']
   },
   {
     id: 'cyberpunk',
@@ -193,6 +277,13 @@ export const TEMPLATES = [
     secondary: 'rgba(250,204,21,0.08)',
     card: 'rgba(250,204,21,0.05)',
     font: 'Fira Code',
+    industry: 'Tech',
+    style: 'Dark',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 19,
+    lastUpdated: 'Today',
+    badges: ['🤖 AI Generated', '🔥 Trending']
   },
   {
     id: 'vcpitch',
@@ -208,6 +299,13 @@ export const TEMPLATES = [
     secondary: 'rgba(236,72,153,0.08)',
     card: 'rgba(236,72,153,0.05)',
     font: 'Outfit',
+    industry: 'Finance',
+    style: 'Modern',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 14,
+    lastUpdated: '1 week ago',
+    badges: ['🚀 Startup', '⭐ Premium']
   },
   {
     id: 'medicaljournal',
@@ -223,6 +321,13 @@ export const TEMPLATES = [
     secondary: 'rgba(13,148,136,0.08)',
     card: 'rgba(13,148,136,0.05)',
     font: 'Merriweather',
+    industry: 'Healthcare',
+    style: 'Classic',
+    animated: false,
+    aspectRatio: '16:9',
+    slideCount: 22,
+    lastUpdated: '3 days ago',
+    badges: ['🏥 Healthcare', '🏆 Editor\'s Pick']
   },
   {
     id: 'elearning',
@@ -238,6 +343,13 @@ export const TEMPLATES = [
     secondary: 'rgba(202,138,4,0.08)',
     card: 'rgba(202,138,4,0.05)',
     font: 'Sora',
+    industry: 'Education',
+    style: 'Classic',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 16,
+    lastUpdated: '10 days ago',
+    badges: ['📚 Academic']
   },
   {
     id: 'socialgrowth',
@@ -253,6 +365,13 @@ export const TEMPLATES = [
     secondary: 'rgba(249,115,22,0.08)',
     card: 'rgba(249,115,22,0.05)',
     font: 'Outfit',
+    industry: 'Marketing',
+    style: 'Modern',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 13,
+    lastUpdated: '5 days ago',
+    badges: ['🔥 Trending']
   },
   {
     id: 'execretro',
@@ -268,6 +387,13 @@ export const TEMPLATES = [
     secondary: 'rgba(107,114,128,0.08)',
     card: 'rgba(107,114,128,0.05)',
     font: 'Sora',
+    industry: 'Finance',
+    style: 'Corporate',
+    animated: false,
+    aspectRatio: '16:9',
+    slideCount: 15,
+    lastUpdated: '1 week ago',
+    badges: ['⭐ Premium']
   },
   {
     id: 'warmeditorial',
@@ -283,6 +409,13 @@ export const TEMPLATES = [
     secondary: 'rgba(194,65,12,0.08)',
     card: 'rgba(194,65,12,0.05)',
     font: 'Merriweather',
+    industry: 'Creative',
+    style: 'Classic',
+    animated: false,
+    aspectRatio: '16:9',
+    slideCount: 12,
+    lastUpdated: '2 weeks ago',
+    badges: ['🎨 Creative']
   },
   {
     id: 'productroadmap',
@@ -298,6 +431,13 @@ export const TEMPLATES = [
     secondary: 'rgba(56,189,248,0.08)',
     card: 'rgba(56,189,248,0.05)',
     font: 'Inter',
+    industry: 'Tech',
+    style: 'Modern',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 14,
+    lastUpdated: 'Today',
+    badges: ['🆕', '🏆 Editor\'s Pick']
   },
   {
     id: 'wellness',
@@ -313,6 +453,13 @@ export const TEMPLATES = [
     secondary: 'rgba(120,113,108,0.08)',
     card: 'rgba(120,113,108,0.05)',
     font: 'Inter',
+    industry: 'Healthcare',
+    style: 'Minimal',
+    animated: false,
+    aspectRatio: '16:9',
+    slideCount: 11,
+    lastUpdated: '1 month ago',
+    badges: ['🆕']
   },
   {
     id: 'saasshowcase',
@@ -328,6 +475,13 @@ export const TEMPLATES = [
     secondary: 'rgba(79,70,229,0.08)',
     card: 'rgba(79,70,229,0.05)',
     font: 'Outfit',
+    industry: 'Tech',
+    style: 'Modern',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 16,
+    lastUpdated: '2 days ago',
+    badges: ['⭐ Premium', '🚀 Startup']
   },
   {
     id: 'retroposter',
@@ -343,6 +497,13 @@ export const TEMPLATES = [
     secondary: 'rgba(220,38,38,0.08)',
     card: 'rgba(220,38,38,0.05)',
     font: 'Sora',
+    industry: 'Creative',
+    style: 'Classic',
+    animated: false,
+    aspectRatio: '16:9',
+    slideCount: 14,
+    lastUpdated: '3 days ago',
+    badges: ['🎨 Creative']
   },
   {
     id: 'corporatetrust',
@@ -358,6 +519,13 @@ export const TEMPLATES = [
     secondary: 'rgba(30,58,138,0.08)',
     card: 'rgba(30,58,138,0.05)',
     font: 'Inter',
+    industry: 'Corporate',
+    style: 'Corporate',
+    animated: false,
+    aspectRatio: '16:9',
+    slideCount: 18,
+    lastUpdated: '4 days ago',
+    badges: ['🏆 Editor\'s Pick']
   },
   {
     id: 'abstractgeom',
@@ -373,5 +541,12 @@ export const TEMPLATES = [
     secondary: 'rgba(124,58,237,0.08)',
     card: 'rgba(124,58,237,0.05)',
     font: 'Outfit',
+    industry: 'Creative',
+    style: 'Modern',
+    animated: true,
+    aspectRatio: '16:9',
+    slideCount: 15,
+    lastUpdated: 'Yesterday',
+    badges: ['⭐ Premium']
   },
 ];

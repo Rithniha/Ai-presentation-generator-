@@ -1,7 +1,21 @@
-import React, { useEffect } from 'react';
-import { X, CheckCircle } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { X, CheckCircle, Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react';
+import TemplateCardPreview from './TemplateCardPreview';
+
+const SLIDE_TYPES = ['cover', 'content', 'timeline', 'chart', 'closing'];
+const SLIDE_LABELS = {
+  cover: 'Cover Slide',
+  content: 'Content Slide',
+  timeline: 'Timeline Slide',
+  chart: 'Chart Slide',
+  closing: 'Closing Slide'
+};
 
 export default function TemplatePreviewModal({ t, onClose, onSelect, compatibilityScore, slideCount }) {
+  const [activeSlide, setActiveSlide] = useState('cover');
+  const [isPlaying, setIsPlaying] = useState(true);
+  const playIntervalRef = useRef(null);
+
   // Dismiss via Escape key
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -13,83 +27,191 @@ export default function TemplatePreviewModal({ t, onClose, onSelect, compatibili
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  // Autoplay slide rotation
+  useEffect(() => {
+    if (isPlaying) {
+      playIntervalRef.current = setInterval(() => {
+        setActiveSlide((prev) => {
+          const currentIndex = SLIDE_TYPES.indexOf(prev);
+          const nextIndex = (currentIndex + 1) % SLIDE_TYPES.length;
+          return SLIDE_TYPES[nextIndex];
+        });
+      }, 2500);
+    } else {
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current);
+      }
+    }
+
+    return () => {
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current);
+      }
+    };
+  }, [isPlaying]);
+
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setIsPlaying(false);
+    setActiveSlide((prev) => {
+      const currentIndex = SLIDE_TYPES.indexOf(prev);
+      const prevIndex = (currentIndex - 1 + SLIDE_TYPES.length) % SLIDE_TYPES.length;
+      return SLIDE_TYPES[prevIndex];
+    });
+  };
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setIsPlaying(false);
+    setActiveSlide((prev) => {
+      const currentIndex = SLIDE_TYPES.indexOf(prev);
+      const nextIndex = (currentIndex + 1) % SLIDE_TYPES.length;
+      return SLIDE_TYPES[nextIndex];
+    });
+  };
+
+  const selectSlide = (slide) => {
+    setIsPlaying(false);
+    setActiveSlide(slide);
+  };
+
   return (
     <div className="ts-preview-overlay" onClick={onClose}>
-      <div className="ts-preview-modal" onClick={e => e.stopPropagation()}>
-        {/* Large simulated slide */}
-        <div className="ts-preview-slide" style={{ background: t.bg, position: 'relative' }}>
-          {/* Accent bar */}
-          <div style={{ position: 'absolute', left: 0, top: 0, width: 6, height: '100%', background: t.accent }} />
+      <div className="ts-preview-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', width: '95%' }}>
+        {/* Large simulated slide container */}
+        <div className="ts-preview-slide" style={{ padding: 0, position: 'relative', overflow: 'hidden', width: '100%', height: 'auto' }}>
+          
+          {/* Main Slide Viewer */}
+          <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9' }}>
+            <TemplateCardPreview t={t} slideType={activeSlide} />
+            
+            {/* Overlay Navigation Arrows */}
+            <button 
+              onClick={handlePrev}
+              style={{
+                position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)',
+                background: 'rgba(255, 255, 255, 0.8)', border: 'none', color: '#0f172a',
+                borderRadius: '50%', width: '36px', height: '36px', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)', backdropFilter: 'blur(4px)', transition: 'all 0.15s'
+              }}
+              aria-label="Previous Slide"
+              className="ts-modal-nav-btn"
+            >
+              <ChevronLeft size={20} />
+            </button>
 
-          {/* Close Button inside slide preview (top right) */}
-          <button 
-            onClick={onClose} 
-            style={{
-              position: 'absolute',
-              top: '1rem',
-              right: '1rem',
-              background: 'rgba(255, 255, 255, 0.15)',
-              border: `1px solid ${t.accent}30`,
-              color: t.text,
-              borderRadius: '50%',
-              width: '32px',
-              height: '32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              zIndex: 10,
-              backdropFilter: 'blur(4px)',
-            }}
-            aria-label="Close Preview"
-          >
-            <X size={18} />
-          </button>
+            <button 
+              onClick={handleNext}
+              style={{
+                position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)',
+                background: 'rgba(255, 255, 255, 0.8)', border: 'none', color: '#0f172a',
+                borderRadius: '50%', width: '36px', height: '36px', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)', backdropFilter: 'blur(4px)', transition: 'all 0.15s'
+              }}
+              aria-label="Next Slide"
+              className="ts-modal-nav-btn"
+            >
+              <ChevronRight size={20} />
+            </button>
 
-          <div style={{ paddingLeft: '1rem' }}>
-            <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', color: t.accent, textTransform: 'uppercase', marginBottom: '0.4rem' }}>
-              {t.category} THEME
-            </div>
-            <div className="ts-preview-slide-title" style={{ color: t.text }}>{t.name}</div>
-            <div className="ts-preview-slide-sub" style={{ color: t.text }}>{t.philosophy}</div>
-          </div>
+            {/* Play/Pause Autoplay overlay control */}
+            <button 
+              onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }}
+              style={{
+                position: 'absolute', bottom: '1rem', right: '1rem',
+                background: 'rgba(255, 255, 255, 0.85)', border: 'none', color: '#0f172a',
+                borderRadius: '8px', padding: '0.4rem 0.8rem', display: 'flex',
+                alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', zIndex: 10,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)', backdropFilter: 'blur(4px)'
+              }}
+            >
+              {isPlaying ? <Pause size={12} fill="#0f172a" /> : <Play size={12} fill="#0f172a" />}
+              <span>{isPlaying ? 'Autoplay On' : 'Autoplay Paused'}</span>
+            </button>
 
-          {/* 3 simulated content cards */}
-          <div className="ts-preview-slide-content" style={{ paddingLeft: '1rem' }}>
-            {['Key Points', 'Data Insights', 'Next Steps'].map((label, i) => (
-              <div key={i} className="ts-preview-card" style={{ background: t.card, color: t.text, border: `1px solid ${t.accent}30` }}>
-                <div style={{ width: 18, height: 18, borderRadius: 4, background: t.accent, marginBottom: '0.4rem', opacity: 0.7 }} />
-                <div style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '0.25rem' }}>{label}</div>
-                <div style={{ height: 3, background: t.accent, borderRadius: 2, opacity: 0.3, marginBottom: 4 }} />
-                <div style={{ height: 3, width: '70%', background: t.accent, borderRadius: 2, opacity: 0.2 }} />
-              </div>
-            ))}
+            {/* Close Button inside slide preview (top right) */}
+            <button 
+              onClick={onClose} 
+              style={{
+                position: 'absolute', top: '1rem', right: '1rem',
+                background: 'rgba(255, 255, 255, 0.85)', border: 'none', color: '#0f172a',
+                borderRadius: '50%', width: '32px', height: '32px', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)', backdropFilter: 'blur(4px)'
+              }}
+              aria-label="Close Preview"
+            >
+              <X size={18} />
+            </button>
           </div>
         </div>
 
+        {/* Horizontal tabs selector for slide types */}
+        <div style={{
+          display: 'flex', justifyContent: 'center', gap: '6px', background: '#f8fafc',
+          padding: '0.75rem 1rem', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap'
+        }}>
+          {SLIDE_TYPES.map((type) => {
+            const isActive = activeSlide === type;
+            return (
+              <button
+                key={type}
+                onClick={() => selectSlide(type)}
+                style={{
+                  padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid',
+                  borderColor: isActive ? t.accent : '#cbd5e1',
+                  background: isActive ? t.accent : '#ffffff',
+                  color: isActive ? '#ffffff' : '#475569',
+                  fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s'
+                }}
+              >
+                {SLIDE_LABELS[type]}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Footer */}
-        <div className="ts-preview-footer">
+        <div className="ts-preview-footer" style={{ padding: '1.25rem 1.5rem' }}>
           <div style={{ flex: 1, marginRight: '1.5rem' }}>
-            <div className="ts-preview-name">{t.name}</div>
-            <div className="ts-preview-desc">
+            <div className="ts-preview-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>{t.name}</span>
+              {t.badges?.map(badge => (
+                <span key={badge} style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: '4px', background: '#f1f5f9', fontWeight: 700, border: '1px solid #cbd5e1' }}>
+                  {badge}
+                </span>
+              ))}
+            </div>
+            <div className="ts-preview-desc" style={{ marginTop: '0.4rem' }}>
               {t.desc}
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
                 <span className="ts-card-tag" style={{ background: '#f1f5f9', color: '#475569' }}>
-                  📊 {slideCount} slides
+                  📊 {slideCount || t.slideCount || 12} slides
                 </span>
                 <span className="ts-card-tag" style={{ background: 'rgba(79, 70, 229, 0.08)', color: '#4f46e5', fontWeight: 700 }}>
-                  ⚡ {compatibilityScore}% match
+                  ⚡ {compatibilityScore || 90}% match
                 </span>
                 <span className="ts-card-tag" style={{ background: '#f1f5f9', color: '#475569' }}>
                   📂 {t.category}
                 </span>
+                <span className="ts-card-tag" style={{ background: '#f1f5f9', color: '#475569' }}>
+                  🎨 {t.style || 'Modern'}
+                </span>
+                <span className="ts-card-tag" style={{ background: '#f1f5f9', color: '#475569' }}>
+                  ⚡ {t.animated ? 'Animated' : 'Static'}
+                </span>
+                <span className="ts-card-tag" style={{ background: '#f1f5f9', color: '#475569' }}>
+                  📏 {t.aspectRatio || '16:9'}
+                </span>
               </div>
-              <div style={{ marginTop: '0.6rem', fontSize: '0.75rem' }}>
-                <b style={{ color: '#475569' }}>Best for:</b> {t.users}
+              <div style={{ marginTop: '0.6rem', fontSize: '0.75rem', color: '#64748b' }}>
+                <b style={{ color: '#475569' }}>Best for:</b> {t.users} | <b style={{ color: '#475569' }}>Updated:</b> {t.lastUpdated || 'Recently'}
               </div>
             </div>
           </div>
-          <div className="ts-preview-actions">
+          <div className="ts-preview-actions" style={{ flexShrink: 0 }}>
             <button className="ts-preview-cancel" onClick={onClose}>
               Cancel
             </button>
