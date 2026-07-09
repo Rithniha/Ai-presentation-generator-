@@ -42,6 +42,11 @@ const PresentationSchema = new mongoose.Schema({
     type: String,
     default: 'classic'
   },
+  status: {
+    type: String,
+    enum: ['published', 'draft', 'deleted'],
+    default: 'draft'
+  },
   slides: [SlideSchema],
   createdAt: {
     type: Date,
