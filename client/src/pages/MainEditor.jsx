@@ -8,7 +8,7 @@ import {
   ChevronLeft, Type, Image as ImageIcon, Shapes, Grid,
   AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline,
   Undo, Redo, Play, Check, Save, RefreshCw, Star, AlertCircle,
-  Lock, Unlock
+  Lock, Unlock, BarChart3, LayoutGrid, Package, Sigma, Network, Table
 } from 'lucide-react';
 import {
   analyzeContent,
@@ -19,6 +19,7 @@ import {
 import '../styles/Editor.css';
 import AIImagePanel from '../components/AIImagePanel';
 import ContextualToolbar from '../components/ContextualToolbar';
+import EditorPanels from '../components/EditorPanels';
 import {
   fetchAllSlideImages,
   fetchSlideImages,
@@ -320,6 +321,7 @@ export default function MainEditor() {
   const [selectedElements, setSelectedElements] = useState([]);
   const [styleClipboard, setStyleClipboard] = useState(null);
   const [toolbarPosition, setToolbarPosition] = useState(null);
+  const [activePanel, setActivePanel] = useState(null);
 
   // ── Image state ──
   const [slideImages, setSlideImages] = useState(new Map());
@@ -442,6 +444,18 @@ export default function MainEditor() {
   const getElementStyle = (key, baseStyles = {}) => {
     const activeSlide = presentation?.slides[activeSlideIdx];
     if (!activeSlide) return baseStyles;
+    
+    if (key.startsWith('el_')) {
+      const el = (activeSlide.elements || []).find(e => e.id === key);
+      const custom = el?.style || {};
+      const merged = { ...baseStyles, ...custom };
+      if (custom.locked) {
+        merged.userSelect = 'none';
+        merged.cursor = 'not-allowed';
+      }
+      return merged;
+    }
+
     const slideStyles = activeSlide.styles || {};
     const plainStyles = slideStyles instanceof Map ? Object.fromEntries(slideStyles) : slideStyles;
     const custom = plainStyles[key] || {};
@@ -458,6 +472,21 @@ export default function MainEditor() {
       if (!prev) return prev;
       const updatedSlides = prev.slides.map((s, idx) => {
         if (idx !== activeSlideIdx) return s;
+
+        if (key.startsWith('el_')) {
+          const elements = (s.elements || []).map(el => {
+            if (el.id !== key) return el;
+            return {
+              ...el,
+              style: {
+                ...el.style,
+                ...styleChanges
+              }
+            };
+          });
+          return { ...s, elements };
+        }
+
         const currentStyles = s.styles || {};
         const plainStyles = currentStyles instanceof Map ? Object.fromEntries(currentStyles) : currentStyles;
         const elStyles = plainStyles[key] || {};
@@ -546,15 +575,31 @@ export default function MainEditor() {
     e.preventDefault();
     e.stopPropagation();
     const activeSlide = presentation?.slides[activeSlideIdx];
-    const isLocked = (activeSlide?.styles instanceof Map ? activeSlide.styles.get(key) : activeSlide?.styles?.[key])?.locked;
+    let isLocked = false;
+    if (key.startsWith('el_')) {
+      const el = (activeSlide?.elements || []).find(x => x.id === key);
+      isLocked = el?.locked;
+    } else {
+      isLocked = (activeSlide?.styles instanceof Map ? activeSlide.styles.get(key) : activeSlide?.styles?.[key])?.locked;
+    }
     if (isLocked) return;
 
     const startX = e.clientX;
     const startY = e.clientY;
-    const currentStyles = (activeSlide?.styles instanceof Map ? Object.fromEntries(activeSlide.styles) : activeSlide?.styles) || {};
-    const elStyles = currentStyles[key] || {};
-    const startLeft = parseFloat(elStyles.left) || 0;
-    const startTop = parseFloat(elStyles.top) || 0;
+
+    let startLeft = 0;
+    let startTop = 0;
+
+    if (key.startsWith('el_')) {
+      const el = (activeSlide?.elements || []).find(x => x.id === key);
+      startLeft = parseFloat(el?.style?.left) || 150;
+      startTop = parseFloat(el?.style?.top) || 150;
+    } else {
+      const currentStyles = (activeSlide?.styles instanceof Map ? Object.fromEntries(activeSlide.styles) : activeSlide?.styles) || {};
+      const elStyles = currentStyles[key] || {};
+      startLeft = parseFloat(elStyles.left) || 0;
+      startTop = parseFloat(elStyles.top) || 0;
+    }
 
     const handleMouseMove = (moveEvt) => {
       let newLeft = startLeft + (moveEvt.clientX - startX);
@@ -563,8 +608,9 @@ export default function MainEditor() {
       if (Math.abs(newLeft) < 10) newLeft = 0;
       if (Math.abs(newTop) < 10) newTop = 0;
 
+      const positionType = key.startsWith('el_') ? 'absolute' : 'relative';
       handleUpdateElementStyle(key, {
-        position: 'relative',
+        position: positionType,
         left: `${newLeft}px`,
         top: `${newTop}px`
       });
@@ -584,17 +630,46 @@ export default function MainEditor() {
     e.preventDefault();
     e.stopPropagation();
     const activeSlide = presentation?.slides[activeSlideIdx];
-    const isLocked = (activeSlide?.styles instanceof Map ? activeSlide.styles.get(key) : activeSlide?.styles?.[key])?.locked;
+    let isLocked = false;
+    if (key.startsWith('el_')) {
+      const el = (activeSlide?.elements || []).find(x => x.id === key);
+      isLocked = el?.locked;
+    } else {
+      isLocked = (activeSlide?.styles instanceof Map ? activeSlide.styles.get(key) : activeSlide?.styles?.[key])?.locked;
+    }
     if (isLocked) return;
 
     const startX = e.clientX;
-    const elStyles = (activeSlide?.styles instanceof Map ? Object.fromEntries(activeSlide.styles) : activeSlide?.styles)?.[key] || {};
-    const startSize = parseInt(elStyles.fontSize) || 24;
+    const startY = e.clientY;
+
+    let startWidth = 0;
+    let startHeight = 0;
+    let startSize = 24;
+
+    if (key.startsWith('el_')) {
+      const el = (activeSlide?.elements || []).find(x => x.id === key);
+      startWidth = parseFloat(el?.style?.width) || 120;
+      startHeight = parseFloat(el?.style?.height) || 120;
+    } else {
+      const elStyles = (activeSlide?.styles instanceof Map ? Object.fromEntries(activeSlide.styles) : activeSlide?.styles)?.[key] || {};
+      startSize = parseInt(elStyles.fontSize) || 24;
+    }
 
     const handleMouseMove = (moveEvt) => {
       const deltaX = moveEvt.clientX - startX;
-      const newSize = Math.max(startSize + deltaX * 0.2, 8);
-      handleUpdateElementStyle(key, { fontSize: `${Math.round(newSize)}px` });
+      const deltaY = moveEvt.clientY - startY;
+
+      if (key.startsWith('el_')) {
+        const newWidth = Math.max(startWidth + deltaX, 20);
+        const newHeight = Math.max(startHeight + deltaY, 20);
+        handleUpdateElementStyle(key, {
+          width: `${newWidth}px`,
+          height: `${newHeight}px`
+        });
+      } else {
+        const newSize = Math.max(startSize + deltaX * 0.2, 8);
+        handleUpdateElementStyle(key, { fontSize: `${Math.round(newSize)}px` });
+      }
       updateToolbarPosition();
     };
 
@@ -611,7 +686,13 @@ export default function MainEditor() {
     e.preventDefault();
     e.stopPropagation();
     const activeSlide = presentation?.slides[activeSlideIdx];
-    const isLocked = (activeSlide?.styles instanceof Map ? activeSlide.styles.get(key) : activeSlide?.styles?.[key])?.locked;
+    let isLocked = false;
+    if (key.startsWith('el_')) {
+      const el = (activeSlide?.elements || []).find(x => x.id === key);
+      isLocked = el?.locked;
+    } else {
+      isLocked = (activeSlide?.styles instanceof Map ? activeSlide.styles.get(key) : activeSlide?.styles?.[key])?.locked;
+    }
     if (isLocked) return;
 
     const el = document.querySelector(`[data-el-key="${key}"]`);
@@ -639,7 +720,30 @@ export default function MainEditor() {
   const handleDuplicateElement = (key) => {
     const activeSlide = presentation?.slides[activeSlideIdx];
     if (!activeSlide) return;
-    if (key === 'title' || key === 'subtitle') {
+
+    if (key.startsWith('el_')) {
+      const el = (activeSlide.elements || []).find(e => e.id === key);
+      if (!el) return;
+      const newEl = {
+        ...el,
+        id: `el_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        style: {
+          ...el.style,
+          left: `${parseFloat(el.style.left || 150) + 25}px`,
+          top: `${parseFloat(el.style.top || 150) + 25}px`
+        }
+      };
+      setPresentation(prev => ({
+        ...prev,
+        slides: prev.slides.map((s, i) => {
+          if (i !== activeSlideIdx) return s;
+          return {
+            ...s,
+            elements: [...(s.elements || []), newEl]
+          };
+        })
+      }));
+    } else if (key === 'title' || key === 'subtitle') {
       const currentStyles = (activeSlide.styles instanceof Map ? Object.fromEntries(activeSlide.styles) : activeSlide.styles) || {};
       const elStyles = currentStyles[key] || {};
       const left = parseFloat(elStyles.left) || 0;
@@ -666,7 +770,19 @@ export default function MainEditor() {
   const handleDeleteElement = (key) => {
     const activeSlide = presentation?.slides[activeSlideIdx];
     if (!activeSlide) return;
-    if (key.startsWith('bullet-')) {
+
+    if (key.startsWith('el_')) {
+      setPresentation(prev => ({
+        ...prev,
+        slides: prev.slides.map((s, i) => {
+          if (i !== activeSlideIdx) return s;
+          return {
+            ...s,
+            elements: (s.elements || []).filter(el => el.id !== key)
+          };
+        })
+      }));
+    } else if (key.startsWith('bullet-')) {
       const idx = parseInt(key.split('-')[1]);
       setPresentation(prev => ({
         ...prev,
@@ -772,6 +888,119 @@ export default function MainEditor() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedElements, presentation, activeSlideIdx]);
+
+  const handleInsertElement = (type, content, defaultStyle = {}) => {
+    const newEl = {
+      id: `el_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      type,
+      content,
+      style: {
+        position: 'absolute',
+        left: '150px',
+        top: '150px',
+        width: type === 'text' ? '300px' : type === 'table' ? '400px' : '360px',
+        height: type === 'text' ? 'auto' : type === 'table' ? '200px' : '220px',
+        transform: 'rotate(0deg)',
+        zIndex: 5,
+        ...defaultStyle
+      },
+      locked: false
+    };
+    setPresentation(prev => {
+      if (!prev) return prev;
+      const updatedSlides = prev.slides.map((s, idx) => {
+        if (idx !== activeSlideIdx) return s;
+        const elements = [...(s.elements || []), newEl];
+        return { ...s, elements };
+      });
+      return { ...prev, slides: updatedSlides };
+    });
+  };
+
+  const handleApplyAutoLayout = (actionType) => {
+    if (selectedElements.length === 0) return;
+    const canvasWidth = 800;
+    const canvasHeight = 450;
+
+    selectedElements.forEach(key => {
+      const el = document.querySelector(`[data-el-key="${key}"]`);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const elWidth = rect.width;
+      const elHeight = rect.height;
+      let styleChanges = {};
+
+      if (actionType === 'center') {
+        styleChanges = {
+          left: `${(canvasWidth - elWidth) / 2}px`,
+          top: `${(canvasHeight - elHeight) / 2}px`
+        };
+      } else if (actionType === 'left') {
+        styleChanges = { left: '40px' };
+      } else if (actionType === 'right') {
+        styleChanges = { left: `${canvasWidth - elWidth - 40}px` };
+      } else if (actionType === 'top') {
+        styleChanges = { top: '40px' };
+      } else if (actionType === 'bottom') {
+        styleChanges = { top: `${canvasHeight - elHeight - 40}px` };
+      } else if (actionType === 'even-space') {
+        const idx = selectedElements.indexOf(key);
+        styleChanges = { left: `${40 + idx * 150}px` };
+      } else if (actionType === 'smart-grid') {
+        const idx = selectedElements.indexOf(key);
+        const col = idx % 3;
+        const row = Math.floor(idx / 3);
+        styleChanges = { left: `${40 + col * 240}px`, top: `${40 + row * 160}px` };
+      } else if (actionType === 'equal-size') {
+        styleChanges = { width: '200px', height: '150px' };
+      }
+
+      handleUpdateElementStyle(key, styleChanges);
+    });
+  };
+
+  const handleElementTextChange = (elId, text) => {
+    setPresentation(prev => {
+      if (!prev) return prev;
+      const updatedSlides = prev.slides.map((s, idx) => {
+        if (idx !== activeSlideIdx) return s;
+        const elements = (s.elements || []).map(el => {
+          if (el.id !== elId) return el;
+          return { ...el, content: text };
+        });
+        return { ...s, elements };
+      });
+      return { ...prev, slides: updatedSlides };
+    });
+  };
+
+  const handleTableCellChange = (elId, rowIdx, colIdx, text) => {
+    setPresentation(prev => {
+      if (!prev) return prev;
+      const updatedSlides = prev.slides.map((s, idx) => {
+        if (idx !== activeSlideIdx) return s;
+        const elements = (s.elements || []).map(el => {
+          if (el.id !== elId) return el;
+          const cells = el.content.cells.map((row, r) => 
+            row.map((cell, c) => (r === rowIdx && c === colIdx) ? text : cell)
+          );
+          return {
+            ...el,
+            content: {
+              ...el.content,
+              cells
+            }
+          };
+        });
+        return { ...s, elements };
+      });
+      return { ...prev, slides: updatedSlides };
+    });
+  };
+
+  const handleToolClick = (toolId) => {
+    setActivePanel(prev => prev === toolId ? null : toolId);
+  };
 
   const handleCanvasClick = (e) => {
     if (!e.target.closest('[data-el-key]') && !e.target.closest('.adv-contextual-toolbar')) {
@@ -981,6 +1210,295 @@ export default function MainEditor() {
     return null;
   };
 
+  const SvgChartRenderer = ({ chartData, width = '100%', height = '100%' }) => {
+    const { chartType, labels = [], datasets = [] } = chartData;
+    const values = datasets[0]?.data || [];
+    const chartColor = datasets[0]?.color || '#7c3aed';
+    
+    if (chartType === 'pie' || chartType === 'doughnut') {
+      let total = values.reduce((a, b) => a + b, 0) || 1;
+      let accumulatedAngle = 0;
+      
+      return (
+        <svg width={width} height={height} viewBox="0 0 100 100">
+          {values.map((v, idx) => {
+            const percentage = v / total;
+            const angle = percentage * 360;
+            const x1 = 50 + 40 * Math.cos((accumulatedAngle - 90) * Math.PI / 180);
+            const y1 = 50 + 40 * Math.sin((accumulatedAngle - 90) * Math.PI / 180);
+            accumulatedAngle += angle;
+            const x2 = 50 + 40 * Math.cos((accumulatedAngle - 90) * Math.PI / 180);
+            const y2 = 50 + 40 * Math.sin((accumulatedAngle - 90) * Math.PI / 180);
+            const largeArc = angle > 180 ? 1 : 0;
+            const d = `M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`;
+            const sliceColor = `hsl(${(idx * 360) / values.length}, 70%, 60%)`;
+            return <path key={idx} d={d} fill={sliceColor} stroke="#fff" strokeWidth="0.5" />;
+          })}
+          {chartType === 'doughnut' && <circle cx="50" cy="50" r="18" fill="#fff" />}
+        </svg>
+      );
+    }
+
+    const maxVal = Math.max(...values, 1);
+    return (
+      <svg width={width} height={height} viewBox="0 0 100 60" style={{ overflow: 'visible' }}>
+        {values.map((v, idx) => {
+          const barHeight = (v / maxVal) * 45;
+          const barWidth = 60 / (values.length || 1);
+          const x = 10 + idx * (barWidth + 5);
+          const y = 50 - barHeight;
+          return (
+            <g key={idx}>
+              <rect x={x} y={y} width={barWidth} height={barHeight} fill={chartColor} rx="1" />
+              <text x={x + barWidth / 2} y={55} fontSize="3.5" textAnchor="middle" fill="#64748b">{labels[idx] || ''}</text>
+              <text x={x + barWidth / 2} y={y - 2} fontSize="3.5" textAnchor="middle" fill="#1e293b" fontWeight="600">{v}</text>
+            </g>
+          );
+        })}
+        <line x1="5" y1="50" x2="95" y2="50" stroke="#cbd5e1" strokeWidth="0.5" />
+      </svg>
+    );
+  };
+
+  const renderCustomElement = (el) => {
+    if (el.type === 'text') {
+      return (
+        <div
+          key={el.id}
+          data-el-key={el.id}
+          contentEditable
+          suppressContentEditableWarning
+          onBlur={e => handleElementTextChange(el.id, e.target.innerText)}
+          onClick={e => handleElementClick(el.id, e)}
+          style={getElementStyle(el.id, {
+            position: 'absolute',
+            outline: 'none',
+            whiteSpace: 'pre-wrap',
+            fontFamily: 'var(--slide-body-font)',
+            color: 'var(--slide-text)',
+            fontSize: '18px'
+          })}
+        >
+          {el.content}
+        </div>
+      );
+    }
+    if (el.type === 'image') {
+      return (
+        <div
+          key={el.id}
+          data-el-key={el.id}
+          onClick={e => handleElementClick(el.id, e)}
+          style={getElementStyle(el.id, {
+            position: 'absolute'
+          })}
+        >
+          <img
+            src={el.content}
+            alt="Custom Image"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }}
+          />
+        </div>
+      );
+    }
+    if (el.type === 'media') {
+      const isVideo = el.content && (el.content.endsWith('.mp4') || el.content.includes('video') || el.content.includes('pexels'));
+      return (
+        <div
+          key={el.id}
+          data-el-key={el.id}
+          onClick={e => handleElementClick(el.id, e)}
+          style={getElementStyle(el.id, {
+            position: 'absolute',
+            background: isVideo ? '#000' : '#f8fafc',
+            border: isVideo ? 'none' : '1px solid #e2e8f0',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          })}
+        >
+          {isVideo ? (
+            <video src={el.content} controls style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '12px' }}>
+              <audio src={el.content} controls style={{ width: '100%', maxWidth: '280px', height: '40px' }} />
+            </div>
+          )}
+        </div>
+      );
+    }
+    if (el.type === 'shape') {
+      const shapeType = el.content.shapeType;
+      let shapeSvg = null;
+      if (shapeType === 'rectangle') shapeSvg = <rect x="2" y="2" width="96" height="96" fill="currentColor" rx="4" />;
+      else if (shapeType === 'circle') shapeSvg = <circle cx="50" cy="50" r="46" fill="currentColor" />;
+      else if (shapeType === 'triangle') shapeSvg = <polygon points="50,5 95,95 5,95" fill="currentColor" />;
+      else if (shapeType === 'arrow-right') shapeSvg = <path d="M10,40 H70 V20 L90,50 L70,80 V60 H10 Z" fill="currentColor" />;
+      else if (shapeType === 'arrow-down') shapeSvg = <path d="M40,10 V70 H20 L50,90 L80,70 H60 V10 Z" fill="currentColor" />;
+      else if (shapeType === 'star') shapeSvg = <polygon points="50,2 64,30 95,35 73,57 78,88 50,74 22,88 27,57 5,35 36,30" fill="currentColor" />;
+      else if (shapeType === 'diamond') shapeSvg = <polygon points="50,5 95,50 50,95 5,50" fill="currentColor" />;
+      else shapeSvg = <rect x="2" y="2" width="96" height="96" fill="currentColor" rx="4" />;
+
+      return (
+        <div
+          key={el.id}
+          data-el-key={el.id}
+          onClick={e => handleElementClick(el.id, e)}
+          style={getElementStyle(el.id, {
+            position: 'absolute',
+            color: el.content.fill || '#7c3aed'
+          })}
+        >
+          <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+            {shapeSvg}
+          </svg>
+        </div>
+      );
+    }
+    if (el.type === 'formula') {
+      let previewHtml = el.content;
+      if (window.katex) {
+        try {
+          previewHtml = window.katex.renderToString(el.content, { throwOnError: false });
+        } catch (err) {
+          console.warn(err);
+        }
+      }
+      return (
+        <div
+          key={el.id}
+          data-el-key={el.id}
+          onClick={e => handleElementClick(el.id, e)}
+          style={getElementStyle(el.id, {
+            position: 'absolute',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            background: 'rgba(255,255,255,0.7)',
+            padding: '6px',
+            borderRadius: '4px',
+            border: '1px solid rgba(139,92,246,0.15)'
+          })}
+          dangerouslySetInnerHTML={{ __html: previewHtml }}
+        />
+      );
+    }
+    if (el.type === 'asset') {
+      return (
+        <div
+          key={el.id}
+          data-el-key={el.id}
+          onClick={e => handleElementClick(el.id, e)}
+          style={getElementStyle(el.id, {
+            position: 'absolute',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '32px'
+          })}
+        >
+          {el.content.code}
+        </div>
+      );
+    }
+    if (el.type === 'table') {
+      const tableData = el.content;
+      return (
+        <div
+          key={el.id}
+          data-el-key={el.id}
+          onClick={e => handleElementClick(el.id, e)}
+          style={getElementStyle(el.id, {
+            position: 'absolute',
+            overflow: 'auto',
+            background: '#fff',
+            border: '1px solid #cbd5e1',
+            borderRadius: '6px',
+            padding: '4px'
+          })}
+        >
+          <table style={{ width: '100%', height: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <tbody>
+              {tableData.cells.map((row, rIdx) => (
+                <tr key={rIdx}>
+                  {row.map((cell, cIdx) => (
+                    <td
+                      key={cIdx}
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={e => handleTableCellChange(el.id, rIdx, cIdx, e.target.innerText)}
+                      style={{
+                        border: '1px solid #cbd5e1',
+                        padding: '6px',
+                        textAlign: 'left',
+                        minWidth: '50px'
+                      }}
+                    >
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+    if (el.type === 'chart') {
+      return (
+        <div
+          key={el.id}
+          data-el-key={el.id}
+          onClick={e => handleElementClick(el.id, e)}
+          style={getElementStyle(el.id, {
+            position: 'absolute',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            padding: '12px',
+            boxSizing: 'border-box'
+          })}
+        >
+          <SvgChartRenderer chartData={el.content} />
+        </div>
+      );
+    }
+    if (el.type === 'mindmap') {
+      return (
+        <div
+          key={el.id}
+          data-el-key={el.id}
+          onClick={e => handleElementClick(el.id, e)}
+          style={getElementStyle(el.id, {
+            position: 'absolute',
+            background: 'rgba(255,255,255,0.9)',
+            border: '1.5px dashed #a855f7',
+            borderRadius: '8px',
+            padding: '8px',
+            boxSizing: 'border-box'
+          })}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <div style={{ background: '#7c3aed', color: '#fff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600', textAlign: 'center', minWidth: '80px' }}>
+              {el.content.rootNode.text}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {el.content.rootNode.children.map((child, cIdx) => (
+                <div key={cIdx} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', padding: '3px 8px', borderRadius: '4px', fontSize: '0.7rem' }}>
+                  {child.text}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   /* ── Render Slide Content Helper ── */
   const renderSlideInner = (slide, idx, layout, themeId) => {
     if (!slide) return null;
@@ -1028,9 +1546,11 @@ export default function MainEditor() {
       });
     };
 
+    let layoutContent = null;
+
     if (layout === 'title') {
       const bgImg = primaryImg;
-      return (
+      layoutContent = (
         <div className={`slide-layout-title ${autoApply ? 'auto-applied-title' : ''}`} style={bgImg ? { position: 'relative' } : {}}>
           {bgImg && (
             <div className="slide-title-bg-img">
@@ -1081,11 +1601,9 @@ export default function MainEditor() {
           </button>
         </div>
       );
-    }
-
-    if (layout === 'bullets') {
+    } else if (layout === 'bullets') {
       const sideImg = primaryImg;
-      return (
+      layoutContent = (
         <div className={`slide-layout-bullets ${sideImg || isImgLoading ? 'has-image' : ''} ${autoApply ? 'auto-applied-bullets' : ''}`}>
           <div className="slide-bullets-text">
             <h2
@@ -1125,10 +1643,8 @@ export default function MainEditor() {
           )}
         </div>
       );
-    }
-
-    if (layout === 'columns') {
-      return (
+    } else if (layout === 'columns') {
+      layoutContent = (
         <div className={`slide-layout-columns ${autoApply ? 'auto-applied-columns' : ''}`}>
           <h2
             data-el-key="title"
@@ -1171,10 +1687,8 @@ export default function MainEditor() {
           </div>
         </div>
       );
-    }
-
-    if (layout === 'stats') {
-      return (
+    } else if (layout === 'stats') {
+      layoutContent = (
         <div className={`slide-layout-stats ${autoApply ? 'auto-applied-stats' : ''}`}>
           <h2
             data-el-key="title"
@@ -1226,10 +1740,8 @@ export default function MainEditor() {
           </div>
         </div>
       );
-    }
-
-    if (layout === 'timeline') {
-      return (
+    } else if (layout === 'timeline') {
+      layoutContent = (
         <div className={`slide-layout-timeline ${autoApply ? 'auto-applied-timeline' : ''}`}>
           <h2
             data-el-key="title"
@@ -1272,7 +1784,12 @@ export default function MainEditor() {
       );
     }
 
-    return null;
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+        {layoutContent}
+        {(slide.elements || []).map(el => renderCustomElement(el))}
+      </div>
+    );
   };
 
   /* ── Loading ── */
@@ -1302,14 +1819,40 @@ export default function MainEditor() {
           <div className="adv-file-menu">
             <span className="adv-doc-title">{presentation.title}</span>
           </div>
-        </div>
-        <div className="adv-topbar-center">
+          <div className="adv-divider" />
           <button className="adv-tool-btn" title="Undo"><Undo size={16} /></button>
           <button className="adv-tool-btn" title="Redo"><Redo size={16} /></button>
-          <div className="adv-divider" />
-          <button className="adv-tool-btn"><Play size={16} /> Present</button>
+        </div>
+        <div className="adv-topbar-center" style={{ gap: '4px' }}>
+          {[
+            { id: 'text', label: 'Text', icon: Type },
+            { id: 'table', label: 'Table', icon: Table },
+            { id: 'chart', label: 'Chart', icon: BarChart3 },
+            { id: 'image', label: 'Image', icon: ImageIcon },
+            { id: 'autolayout', label: 'Auto Layout', icon: LayoutGrid },
+            { id: 'asset', label: 'Asset', icon: Package },
+            { id: 'media', label: 'Media', icon: Play },
+            { id: 'shape', label: 'Shape', icon: Shapes },
+            { id: 'formula', label: 'Formula', icon: Sigma },
+            { id: 'mindmap', label: 'Mind Map', icon: Network }
+          ].map(tool => {
+            const Icon = tool.icon;
+            const isActive = activePanel === tool.id;
+            return (
+              <button
+                key={tool.id}
+                onClick={() => handleToolClick(tool.id)}
+                className={`adv-nav-tool-btn ${isActive ? 'active' : ''}`}
+                title={tool.label}
+              >
+                <Icon size={18} />
+                <span>{tool.label}</span>
+              </button>
+            );
+          })}
         </div>
         <div className="adv-topbar-right">
+          <button className="adv-btn adv-btn-secondary" style={{ marginRight: '0.5rem' }}><Play size={16} /> Present</button>
           <button 
             onClick={() => setIsCompareMode(!isCompareMode)}
             className={`adv-btn ${isCompareMode ? 'adv-btn-primary' : 'adv-btn-secondary'}`}
@@ -1326,6 +1869,22 @@ export default function MainEditor() {
           </button>
         </div>
       </header>
+
+      {/* ── Editor Panels (Slide-Down Panel Container) ── */}
+      {activePanel && (
+        <div style={{ position: 'relative', zIndex: 9, animation: 'slideDown 0.25s ease-out' }}>
+          <EditorPanels
+            activePanel={activePanel}
+            onClose={() => setActivePanel(null)}
+            onInsert={handleInsertElement}
+            activeElement={selectedElements[0]}
+            onUpdateElementStyle={handleUpdateElementStyle}
+            selectedElements={selectedElements}
+            activeSlide={presentation?.slides[activeSlideIdx]}
+            onApplyAutoLayout={handleApplyAutoLayout}
+          />
+        </div>
+      )}
 
       {/* ── Format Toolbar ── */}
       <div className="adv-format-toolbar">
