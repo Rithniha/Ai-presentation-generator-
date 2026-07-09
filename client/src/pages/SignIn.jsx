@@ -53,7 +53,7 @@ export default function SignIn() {
 
   return (
     <div className="auth-container">
-      <div className="auth-card">
+      <div className="auth-card auth-fade-in">
         <div className="auth-header">
           <Link to="/" className="auth-logo">
             <div className="auth-logo-icon">
@@ -93,6 +93,19 @@ export default function SignIn() {
               required
               disabled={loading}
             />
+          </div>
+
+          <div className="auth-row-extra">
+            <a 
+              href="#" 
+              className="auth-forgot-link" 
+              onClick={(e) => { 
+                e.preventDefault(); 
+                alert('A password reset link has been simulated & sent to ' + (email || 'your email') + '!'); 
+              }}
+            >
+              Forgot Password?
+            </a>
           </div>
 
           <button type="submit" className="auth-btn-submit" disabled={loading}>

@@ -1,14 +1,40 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Sparkles, 
   ArrowRight, 
   Presentation 
 } from 'lucide-react';
+import { authService } from '../services/auth';
 import '../styles/Landing.css';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const currentUser = await authService.getMe();
+        setUser(currentUser);
+      } catch (err) {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      setUser(null);
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
 
   return (
     <div className="landing-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', justifyContent: 'space-between' }}>
@@ -21,15 +47,27 @@ export default function LandingPage() {
           <span>DeckFlow</span>
         </a>
         <div className="landing-header-actions" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button onClick={() => navigate('/dashboard')} className="landing-btn landing-btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-            Dashboard
-          </button>
-          <button onClick={() => navigate('/signin')} className="landing-btn" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem 1rem', fontSize: '0.9rem', color: '#475569', fontWeight: 500 }}>
-            Sign In
-          </button>
-          <button onClick={() => navigate('/signup')} className="landing-btn landing-btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', width: 'auto' }}>
-            Sign Up
-          </button>
+          {loading ? (
+            <div style={{ width: '80px' }}></div>
+          ) : user ? (
+            <>
+              <button onClick={() => navigate('/dashboard')} className="landing-btn landing-btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                Dashboard
+              </button>
+              <button onClick={handleLogout} className="landing-btn landing-btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', width: 'auto' }}>
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => navigate('/signin')} className="landing-btn" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem 1rem', fontSize: '0.9rem', color: '#475569', fontWeight: 500 }}>
+                Sign In
+              </button>
+              <button onClick={() => navigate('/signup')} className="landing-btn landing-btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', width: 'auto' }}>
+                Sign Up
+              </button>
+            </>
+          )}
         </div>
       </header>
 
@@ -49,7 +87,7 @@ export default function LandingPage() {
         </p>
 
         <button 
-          onClick={() => navigate('/create-deck')} 
+          onClick={() => navigate(user ? '/create-deck' : '/signin')} 
           className="landing-btn landing-btn-primary" 
           style={{ 
             fontSize: '1.1rem', 

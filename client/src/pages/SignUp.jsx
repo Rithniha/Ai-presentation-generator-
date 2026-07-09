@@ -10,13 +10,19 @@ export default function SignUp() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !email || !password) return;
+    if (!name || !email || !password || !confirmPassword) return;
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -54,7 +60,7 @@ export default function SignUp() {
 
   return (
     <div className="auth-container">
-      <div className="auth-card">
+      <div className="auth-card auth-fade-in">
         <div className="auth-header">
           <Link to="/" className="auth-logo">
             <div className="auth-logo-icon">
@@ -104,6 +110,19 @@ export default function SignUp() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div>
+            <label className="auth-label">Confirm Password</label>
+            <input
+              type="password"
+              className="auth-input"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               required
               disabled={loading}
             />
