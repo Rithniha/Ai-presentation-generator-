@@ -40,7 +40,103 @@ export default function EditorPanels({
 }) {
   const isKaTeXLoaded = useKaTeX();
 
+  useEffect(() => {
+    if (activePanel !== 'asset') return;
+    
+    // Prevent background scrolling
+    const originalStyle = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.body.style.overflow = originalStyle;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activePanel, onClose]);
+
   if (!activePanel) return null;
+
+  if (activePanel === 'asset') {
+    return (
+      <div 
+        className="asset-modal-overlay"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.45)', // 45% dark backdrop
+          zIndex: 1000,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          animation: 'fadeIn 0.2s ease-out'
+        }}
+        onClick={onClose}
+      >
+        <div
+          className="asset-modal-container"
+          style={{
+            width: '800px',
+            height: '550px',
+            maxWidth: '90vw',
+            maxHeight: '85vh',
+            background: '#ffffff',
+            borderRadius: '12px',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04), 0 0 0 1px rgba(139,92,246,0.15)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            animation: 'scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+            boxSizing: 'border-box'
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Modal Header */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '16px 24px',
+            borderBottom: '1px solid #e2e8f0',
+            background: '#f8fafc',
+            height: '56px',
+            boxSizing: 'border-box'
+          }}>
+            <span style={{ fontWeight: 600, fontSize: '1rem', color: '#1e293b' }}>Asset Controls</span>
+            <button 
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                color: '#64748b'
+              }}
+              className="hover-bg-gray"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          {/* Modal Body */}
+          <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+            <AssetPanel onInsert={onInsert} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 

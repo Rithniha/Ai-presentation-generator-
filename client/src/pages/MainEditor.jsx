@@ -1844,7 +1844,7 @@ export default function MainEditor() {
       </header>
 
       {/* ── Editor Panels (Slide-Down Panel Container) ── */}
-      {activePanel && (
+      {activePanel && activePanel !== 'asset' && (
         <div style={{ position: 'relative', zIndex: 9, animation: 'slideDown 0.25s ease-out' }}>
           <EditorPanels
             activePanel={activePanel}
@@ -2343,6 +2343,19 @@ export default function MainEditor() {
         </aside>
 
       </div>
+
+      {activePanel === 'asset' && (
+        <EditorPanels
+          activePanel={activePanel}
+          onClose={() => setActivePanel(null)}
+          onInsert={handleInsertElement}
+          activeElement={selectedElements[0]}
+          onUpdateElementStyle={handleUpdateElementStyle}
+          selectedElements={selectedElements}
+          activeSlide={presentation?.slides[activeSlideIdx]}
+          onApplyAutoLayout={handleApplyAutoLayout}
+        />
+      )}
     </div>
   );
 }
