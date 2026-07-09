@@ -24,6 +24,12 @@ export const authService = {
     return response.user;
   },
 
+  // Google Login / Registration
+  googleLogin: async (credential) => {
+    const response = await api.post('/api/auth/google', { token: credential });
+    return response.user;
+  },
+
   // Get current logged user profile
   getMe: async () => {
     try {
