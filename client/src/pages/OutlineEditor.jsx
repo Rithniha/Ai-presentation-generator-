@@ -371,7 +371,8 @@ export default function OutlineEditor() {
   const applyLayoutTemplate = (layoutId) => {
     setSlides(prev => {
       const updated = [...prev];
-      updated[activeSlideIdx].layout = layoutId;
+      // Immutable update — spread the slide to avoid mutating original object
+      updated[activeSlideIdx] = { ...updated[activeSlideIdx], layout: layoutId };
       return updated;
     });
     setTerminalLogs(prev => [
