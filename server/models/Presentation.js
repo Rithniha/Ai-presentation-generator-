@@ -26,6 +26,10 @@ const SlideSchema = new mongoose.Schema({
     type: Map,
     of: mongoose.Schema.Types.Mixed,
     default: {}
+  },
+  elements: {
+    type: Array,
+    default: []
   }
 });
 
