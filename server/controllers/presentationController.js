@@ -60,8 +60,18 @@ exports.getPresentation = async (req, res, next) => {
 // @access  Public
 exports.createPresentation = async (req, res, next) => {
   try {
-    const { title, theme, slides, guestSessionId } = req.body;
-    let newPresentationData = { title, theme, slides: slides || [] };
+    const { title, theme, topic, audience, tone, purpose, industry, brandStyle, slides, guestSessionId } = req.body;
+    let newPresentationData = { 
+      title, 
+      theme, 
+      topic: topic || '', 
+      audience: audience || '', 
+      tone: tone || 'professional', 
+      purpose: purpose || '', 
+      industry: industry || '', 
+      brandStyle: brandStyle || '', 
+      slides: slides || [] 
+    };
 
     if (req.user) {
       // Auth user

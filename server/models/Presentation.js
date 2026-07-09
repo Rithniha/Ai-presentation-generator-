@@ -21,6 +21,11 @@ const SlideSchema = new mongoose.Schema({
   note: {
     type: String,
     default: ''
+  },
+  styles: {
+    type: Map,
+    of: mongoose.Schema.Types.Mixed,
+    default: {}
   }
 });
 
@@ -41,6 +46,30 @@ const PresentationSchema = new mongoose.Schema({
   theme: {
     type: String,
     default: 'classic'
+  },
+  topic: {
+    type: String,
+    default: ''
+  },
+  audience: {
+    type: String,
+    default: ''
+  },
+  tone: {
+    type: String,
+    default: 'professional'
+  },
+  purpose: {
+    type: String,
+    default: ''
+  },
+  industry: {
+    type: String,
+    default: ''
+  },
+  brandStyle: {
+    type: String,
+    default: ''
   },
   slides: [SlideSchema],
   createdAt: {

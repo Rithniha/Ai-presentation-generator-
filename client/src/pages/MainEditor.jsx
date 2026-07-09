@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../services/api';
 import { getGuestSessionId } from '../services/auth';
 import { exportToPptx } from '../services/pptxExporter';
@@ -7,10 +7,18 @@ import {
   Sparkles, Download, Layout, Plus, Trash2,
   ChevronLeft, Type, Image as ImageIcon, Shapes, Grid,
   AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline,
-  Undo, Redo, Play, Check, Save, RefreshCw
+  Undo, Redo, Play, Check, Save, RefreshCw, Star, AlertCircle,
+  Lock, Unlock
 } from 'lucide-react';
+import {
+  analyzeContent,
+  getThemeRecommendations,
+  getLayoutRecommendations,
+  recordUserSelection
+} from '../services/recommendationEngine';
 import '../styles/Editor.css';
 import AIImagePanel from '../components/AIImagePanel';
+import ContextualToolbar from '../components/ContextualToolbar';
 import {
   fetchAllSlideImages,
   fetchSlideImages,
@@ -289,6 +297,7 @@ function ThemeTile({ id, theme, isActive, onSelect, onHover, onLeave }) {
 export default function MainEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const guestSessionId = getGuestSessionId();
 
   const [presentation, setPresentation] = useState(null);
@@ -298,23 +307,32 @@ export default function MainEditor() {
   const [activeSidebarTab, setActiveSidebarTab] = useState('templates');
   const [selectedElement, setSelectedElement] = useState(null);
   const [hoveredTheme, setHoveredTheme] = useState(null);
+  const [hoveredLayout, setHoveredLayout] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // ── AI Recommendation and View States ──
+  const [autoApply, setAutoApply] = useState(false);
+  const [isCompareMode, setIsCompareMode] = useState(false);
+  const [explainingId, setExplainingId] = useState(null);
+  const [recommendationToast, setRecommendationToast] = useState(null);
+
+  // ── Contextual Text Toolbar & Multi-Selection States ──
+  const [selectedElements, setSelectedElements] = useState([]);
+  const [styleClipboard, setStyleClipboard] = useState(null);
+  const [toolbarPosition, setToolbarPosition] = useState(null);
+
   // ── Image state ──
-  // Map: slideIndex → { primary, alternatives, keywords, query }
   const [slideImages, setSlideImages] = useState(new Map());
   const [imageLoadingIdx, setImageLoadingIdx] = useState(null);
-  // Track every image ID used to guarantee no duplicates across slides
   const usedImageIdsRef = useRef(new Set());
 
-  // ── Auto-fetch images whenever presentation loads ──
+  // ── Auto-fetch images ──
   const fetchImagesForPresentation = useCallback(async (slides, meta) => {
     if (!slides || slides.length === 0) return;
     clearUsedImages();
     usedImageIdsRef.current.clear();
     try {
       const imgMap = await fetchAllSlideImages(slides, meta, 5);
-      // Record all primary IDs as used
       imgMap.forEach(entry => {
         if (entry.primary?.id) usedImageIdsRef.current.add(entry.primary.id);
       });
@@ -360,19 +378,52 @@ export default function MainEditor() {
   const loadPresentation = async () => {
     try {
       setLoading(true);
+      const locationState = location.state || {};
+      
       if (id.startsWith('pres_')) {
         const demoSlides = [
           { layout: 'title',   title: 'Welcome to DeckFlow AI',  content: ['Your intelligent presentation assistant'] },
           { layout: 'bullets', title: 'Key Features',            content: ['Auto Generation', 'Smart Formatting', 'Export to PPTX'] },
           { layout: 'columns', title: 'Our Pillars',             content: ['Innovation', 'Efficiency', 'Impact'] },
         ];
-        const demoMeta = { title: 'DeckFlow AI Presentation', topic: 'AI presentation builder', audience: 'business', tone: 'professional' };
-        setPresentation({ title: 'Generated Presentation', theme: 'classic', slides: demoSlides });
+        
+        setPresentation({ 
+          title: locationState.title || 'Generated Presentation', 
+          theme: locationState.selectedTheme || 'classic',
+          topic: locationState.topic || locationState.requirements || 'AI Presentation Builder',
+          audience: locationState.selectedRole || 'business',
+          tone: locationState.tone || 'professional',
+          purpose: locationState.purpose || 'business',
+          industry: locationState.industry || '',
+          brandStyle: locationState.brandStyle || '',
+          slides: demoSlides 
+        });
+        
+        const demoMeta = { 
+          title: locationState.title || 'DeckFlow AI Presentation', 
+          topic: locationState.requirements || 'AI presentation builder', 
+          audience: locationState.selectedRole || 'business', 
+          tone: locationState.tone || 'professional' 
+        };
         fetchImagesForPresentation(demoSlides, demoMeta);
       } else {
         const response = await api.get(`/api/presentations/${id}?guestSessionId=${guestSessionId}`);
-        setPresentation(response.data);
-        const meta = { title: response.data.title, topic: response.data.title, audience: '', tone: 'professional' };
+        setPresentation({
+          ...response.data,
+          topic: response.data.topic || locationState.requirements || '',
+          audience: response.data.audience || locationState.selectedRole || '',
+          tone: response.data.tone || locationState.tone || 'professional',
+          purpose: response.data.purpose || '',
+          industry: response.data.industry || '',
+          brandStyle: response.data.brandStyle || '',
+        });
+        
+        const meta = { 
+          title: response.data.title, 
+          topic: response.data.topic || response.data.title, 
+          audience: response.data.audience || '', 
+          tone: response.data.tone || 'professional' 
+        };
         fetchImagesForPresentation(response.data.slides, meta);
       }
     } catch (err) {
@@ -384,6 +435,410 @@ export default function MainEditor() {
   };
 
   useEffect(() => { loadPresentation(); }, [id]);
+
+  /* ════════════════════════════════════════════════
+     CONTEXTUAL TOOLBAR AND OVERLAY ACTIONS
+  ════════════════════════════════════════════════ */
+  const getElementStyle = (key, baseStyles = {}) => {
+    const activeSlide = presentation?.slides[activeSlideIdx];
+    if (!activeSlide) return baseStyles;
+    const slideStyles = activeSlide.styles || {};
+    const plainStyles = slideStyles instanceof Map ? Object.fromEntries(slideStyles) : slideStyles;
+    const custom = plainStyles[key] || {};
+    const merged = { ...baseStyles, ...custom };
+    if (custom.locked) {
+      merged.userSelect = 'none';
+      merged.cursor = 'not-allowed';
+    }
+    return merged;
+  };
+
+  const handleUpdateElementStyle = (key, styleChanges) => {
+    setPresentation(prev => {
+      if (!prev) return prev;
+      const updatedSlides = prev.slides.map((s, idx) => {
+        if (idx !== activeSlideIdx) return s;
+        const currentStyles = s.styles || {};
+        const plainStyles = currentStyles instanceof Map ? Object.fromEntries(currentStyles) : currentStyles;
+        const elStyles = plainStyles[key] || {};
+        return {
+          ...s,
+          styles: {
+            ...plainStyles,
+            [key]: {
+              ...elStyles,
+              ...styleChanges
+            }
+          }
+        };
+      });
+      return { ...prev, slides: updatedSlides };
+    });
+  };
+
+  const handleElementClick = (key, e) => {
+    e.stopPropagation();
+    const activeSlide = presentation?.slides[activeSlideIdx];
+    const isLocked = (activeSlide?.styles instanceof Map ? activeSlide.styles.get(key) : activeSlide?.styles?.[key])?.locked;
+    if (isLocked) {
+      setSelectedElements([key]);
+      return;
+    }
+    
+    if (e.shiftKey) {
+      if (selectedElements.includes(key)) {
+        setSelectedElements(prev => prev.filter(k => k !== key));
+      } else {
+        setSelectedElements(prev => [...prev, key]);
+      }
+    } else {
+      setSelectedElements([key]);
+    }
+  };
+
+  const updateToolbarPosition = useCallback(() => {
+    if (selectedElements.length === 0) {
+      setToolbarPosition(null);
+      return;
+    }
+    let minTop = Infinity;
+    let minLeft = Infinity;
+    let maxRight = -Infinity;
+    let found = false;
+    
+    selectedElements.forEach(key => {
+      const el = document.querySelector(`[data-el-key="${key}"]`);
+      if (el) {
+        found = true;
+        const rect = el.getBoundingClientRect();
+        if (rect.top < minTop) minTop = rect.top;
+        if (rect.left < minLeft) minLeft = rect.left;
+        if (rect.right > maxRight) maxRight = rect.right;
+      }
+    });
+    
+    if (!found) {
+      setToolbarPosition(null);
+      return;
+    }
+    
+    const editorCanvas = document.querySelector('.adv-canvas-wrapper');
+    if (!editorCanvas) return;
+    const canvasRect = editorCanvas.getBoundingClientRect();
+    
+    let top = minTop - canvasRect.top - 68;
+    let left = minLeft - canvasRect.left + (maxRight - minLeft) / 2 - 200;
+    
+    if (top < 10) top = minTop - canvasRect.top + 30;
+    if (left < 10) left = 10;
+    if (left + 420 > canvasRect.width) left = canvasRect.width - 430;
+    
+    setToolbarPosition({ top, left });
+  }, [selectedElements]);
+
+  useEffect(() => {
+    updateToolbarPosition();
+    window.addEventListener('resize', updateToolbarPosition);
+    return () => window.removeEventListener('resize', updateToolbarPosition);
+  }, [selectedElements, updateToolbarPosition]);
+
+  const handleDragStart = (key, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const activeSlide = presentation?.slides[activeSlideIdx];
+    const isLocked = (activeSlide?.styles instanceof Map ? activeSlide.styles.get(key) : activeSlide?.styles?.[key])?.locked;
+    if (isLocked) return;
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const currentStyles = (activeSlide?.styles instanceof Map ? Object.fromEntries(activeSlide.styles) : activeSlide?.styles) || {};
+    const elStyles = currentStyles[key] || {};
+    const startLeft = parseFloat(elStyles.left) || 0;
+    const startTop = parseFloat(elStyles.top) || 0;
+
+    const handleMouseMove = (moveEvt) => {
+      let newLeft = startLeft + (moveEvt.clientX - startX);
+      let newTop = startTop + (moveEvt.clientY - startY);
+      
+      if (Math.abs(newLeft) < 10) newLeft = 0;
+      if (Math.abs(newTop) < 10) newTop = 0;
+
+      handleUpdateElementStyle(key, {
+        position: 'relative',
+        left: `${newLeft}px`,
+        top: `${newTop}px`
+      });
+      updateToolbarPosition();
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleResizeStart = (key, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const activeSlide = presentation?.slides[activeSlideIdx];
+    const isLocked = (activeSlide?.styles instanceof Map ? activeSlide.styles.get(key) : activeSlide?.styles?.[key])?.locked;
+    if (isLocked) return;
+
+    const startX = e.clientX;
+    const elStyles = (activeSlide?.styles instanceof Map ? Object.fromEntries(activeSlide.styles) : activeSlide?.styles)?.[key] || {};
+    const startSize = parseInt(elStyles.fontSize) || 24;
+
+    const handleMouseMove = (moveEvt) => {
+      const deltaX = moveEvt.clientX - startX;
+      const newSize = Math.max(startSize + deltaX * 0.2, 8);
+      handleUpdateElementStyle(key, { fontSize: `${Math.round(newSize)}px` });
+      updateToolbarPosition();
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleRotateStart = (key, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const activeSlide = presentation?.slides[activeSlideIdx];
+    const isLocked = (activeSlide?.styles instanceof Map ? activeSlide.styles.get(key) : activeSlide?.styles?.[key])?.locked;
+    if (isLocked) return;
+
+    const el = document.querySelector(`[data-el-key="${key}"]`);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    const handleMouseMove = (moveEvt) => {
+      const angle = Math.atan2(moveEvt.clientY - centerY, moveEvt.clientX - centerX);
+      const degree = Math.round(angle * (180 / Math.PI)) - 90;
+      handleUpdateElementStyle(key, { transform: `rotate(${degree}deg)` });
+      updateToolbarPosition();
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleDuplicateElement = (key) => {
+    const activeSlide = presentation?.slides[activeSlideIdx];
+    if (!activeSlide) return;
+    if (key === 'title' || key === 'subtitle') {
+      const currentStyles = (activeSlide.styles instanceof Map ? Object.fromEntries(activeSlide.styles) : activeSlide.styles) || {};
+      const elStyles = currentStyles[key] || {};
+      const left = parseFloat(elStyles.left) || 0;
+      const top = parseFloat(elStyles.top) || 0;
+      handleUpdateElementStyle(key, {
+        left: `${left + 25}px`,
+        top: `${top + 25}px`
+      });
+    } else if (key.startsWith('bullet-')) {
+      const idx = parseInt(key.split('-')[1]);
+      const bulletText = activeSlide.content[idx];
+      setPresentation(prev => ({
+        ...prev,
+        slides: prev.slides.map((s, i) => {
+          if (i !== activeSlideIdx) return s;
+          const content = [...s.content];
+          content.splice(idx + 1, 0, bulletText);
+          return { ...s, content };
+        })
+      }));
+    }
+  };
+
+  const handleDeleteElement = (key) => {
+    const activeSlide = presentation?.slides[activeSlideIdx];
+    if (!activeSlide) return;
+    if (key.startsWith('bullet-')) {
+      const idx = parseInt(key.split('-')[1]);
+      setPresentation(prev => ({
+        ...prev,
+        slides: prev.slides.map((s, i) => {
+          if (i !== activeSlideIdx) return s;
+          const content = s.content.filter((_, bulletIdx) => bulletIdx !== idx);
+          return { ...s, content };
+        })
+      }));
+    } else {
+      if (key === 'title') {
+        setPresentation(prev => ({
+          ...prev,
+          slides: prev.slides.map((s, i) => i === activeSlideIdx ? { ...s, title: '' } : s)
+        }));
+      }
+    }
+  };
+
+  const handleAiTextAction = async (key, actionType) => {
+    const el = document.querySelector(`[data-el-key="${key}"]`);
+    if (!el) return;
+    const currentText = el.innerText || el.textContent;
+    setSaving(true);
+    try {
+      let rewritten = currentText;
+      if (actionType === 'improve') {
+        rewritten = `Optimized: ${currentText} (Enriched executive presentation vocabulary)`;
+      } else if (actionType === 'rewrite') {
+        rewritten = `Alternative version: ${currentText}`;
+      } else if (actionType === 'shorten') {
+        rewritten = currentText.length > 25 ? currentText.substring(0, 25) + '...' : currentText;
+      } else if (actionType === 'expand') {
+        rewritten = `${currentText} (expanding key customer strategies and target segments)`;
+      } else if (actionType === 'grammar') {
+        rewritten = currentText.trim();
+      } else if (actionType === 'tone-professional') {
+        rewritten = `Executive: ${currentText}`;
+      } else if (actionType === 'tone-casual') {
+        rewritten = `Hey, so: ${currentText}`;
+      }
+      
+      if (key === 'title') {
+        setPresentation(prev => ({
+          ...prev,
+          slides: prev.slides.map((s, i) => i === activeSlideIdx ? { ...s, title: rewritten } : s)
+        }));
+      } else if (key.startsWith('bullet-')) {
+        const idx = parseInt(key.split('-')[1]);
+        setPresentation(prev => ({
+          ...prev,
+          slides: prev.slides.map((s, i) => {
+            if (i !== activeSlideIdx) return s;
+            const content = [...s.content];
+            content[idx] = rewritten;
+            return { ...s, content };
+          })
+        }));
+      }
+    } catch (e) {
+      console.warn(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Keyboard Shortcuts Listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (selectedElements.length === 0) return;
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const cmdCtrl = isMac ? e.metaKey : e.ctrlKey;
+      
+      if (cmdCtrl) {
+        if (e.key === 'b') {
+          e.preventDefault();
+          selectedElements.forEach(key => {
+            const currentWeight = getElementStyle(key).fontWeight;
+            handleUpdateElementStyle(key, { fontWeight: currentWeight === 'bold' ? 'normal' : 'bold' });
+          });
+        } else if (e.key === 'i') {
+          e.preventDefault();
+          selectedElements.forEach(key => {
+            const currentStyle = getElementStyle(key).fontStyle;
+            handleUpdateElementStyle(key, { fontStyle: currentStyle === 'italic' ? 'normal' : 'italic' });
+          });
+        } else if (e.key === 'u') {
+          e.preventDefault();
+          selectedElements.forEach(key => {
+            const currentDec = getElementStyle(key).textDecoration;
+            handleUpdateElementStyle(key, { textDecoration: currentDec === 'underline' ? 'none' : 'underline' });
+          });
+        } else if (e.key === 'd') {
+          e.preventDefault();
+          handleDuplicateElement(selectedElements[0]);
+        }
+      } else if (e.key === 'Delete') {
+        selectedElements.forEach(key => handleDeleteElement(key));
+        setSelectedElements([]);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedElements, presentation, activeSlideIdx]);
+
+  const handleCanvasClick = (e) => {
+    if (!e.target.closest('[data-el-key]') && !e.target.closest('.adv-contextual-toolbar')) {
+      setSelectedElements([]);
+    }
+  };
+
+  // ── AI Recommendation Logic ──
+  const contentProfile = useMemo(() => {
+    return analyzeContent(presentation, activeSlideIdx);
+  }, [presentation, activeSlideIdx]);
+
+  const themeRecommendations = useMemo(() => {
+    return getThemeRecommendations(presentation, contentProfile);
+  }, [presentation, contentProfile]);
+
+  const layoutRecommendations = useMemo(() => {
+    return getLayoutRecommendations(presentation, contentProfile, activeSlideIdx);
+  }, [presentation, contentProfile, activeSlideIdx]);
+
+  // Toast alert for continuous recommendation updates
+  const prevRecLayoutIdRef = useRef(null);
+  useEffect(() => {
+    if (!layoutRecommendations || layoutRecommendations.length === 0) return;
+    const topLayout = layoutRecommendations[0];
+    
+    // Alert if top recommendation layout changes
+    if (prevRecLayoutIdRef.current && prevRecLayoutIdRef.current !== topLayout.id) {
+      setRecommendationToast({
+        id: topLayout.id,
+        name: topLayout.name,
+        reason: topLayout.reason
+      });
+      const timer = setTimeout(() => setRecommendationToast(null), 6000);
+      return () => clearTimeout(timer);
+    }
+    prevRecLayoutIdRef.current = topLayout.id;
+  }, [layoutRecommendations]);
+
+  // Auto Apply AI Recommendations Effect
+  useEffect(() => {
+    if (!autoApply || !presentation || !themeRecommendations.length || !layoutRecommendations.length) return;
+    
+    let updated = false;
+    let nextPresentation = { ...presentation };
+    
+    // Auto-apply recommended theme
+    const topThemeId = themeRecommendations[0].id;
+    if (presentation.theme !== topThemeId) {
+      nextPresentation.theme = topThemeId;
+      updated = true;
+    }
+
+    // Auto-apply recommended layout for active slide
+    const topLayoutId = layoutRecommendations[0].id;
+    const activeSlide = presentation.slides[activeSlideIdx];
+    if (activeSlide && activeSlide.layout !== topLayoutId) {
+      nextPresentation.slides = presentation.slides.map((s, idx) => 
+        idx === activeSlideIdx ? { ...s, layout: topLayoutId } : s
+      );
+      updated = true;
+    }
+
+    if (updated) {
+      setPresentation(nextPresentation);
+    }
+  }, [autoApply, themeRecommendations, layoutRecommendations, activeSlideIdx]);
 
   /* ── Handlers ── */
 
@@ -403,9 +858,18 @@ export default function MainEditor() {
 
   const handleDownload = () => { if (presentation) exportToPptx(presentation); };
 
-  // Smooth theme transition — fade out → change → fade in
+  // Smooth theme transition
   const handleThemeChange = (themeName) => {
     if (presentation?.theme === themeName) return;
+    
+    // Learning System preference tracker
+    try {
+      const prefs = localStorage.getItem('deckflow_user_preferences') || '{"themes":{},"layouts":{}}';
+      const parsed = JSON.parse(prefs);
+      parsed.themes[themeName] = (parsed.themes[themeName] || 0) + 1;
+      localStorage.setItem('deckflow_user_preferences', JSON.stringify(parsed));
+    } catch (e) {}
+
     setIsTransitioning(true);
     setHoveredTheme(null);
     setTimeout(() => {
@@ -414,9 +878,18 @@ export default function MainEditor() {
     }, 220);
   };
 
-  // Smooth layout transition — immutable update + fade
+  // Smooth layout transition
   const handleLayoutChange = (layoutName) => {
     if (!activeSlide || activeSlide.layout === layoutName) return;
+
+    // Learning System preference tracker
+    try {
+      const prefs = localStorage.getItem('deckflow_user_preferences') || '{"themes":{},"layouts":{}}';
+      const parsed = JSON.parse(prefs);
+      parsed.layouts[layoutName] = (parsed.layouts[layoutName] || 0) + 1;
+      localStorage.setItem('deckflow_user_preferences', JSON.stringify(parsed));
+    } catch (e) {}
+
     setIsTransitioning(true);
     setSelectedElement(null);
     setTimeout(() => {
@@ -468,21 +941,12 @@ export default function MainEditor() {
     setActiveSlideIdx(0);
   };
 
-  /* ── Loading ── */
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f3f4f6' }}>
-        <div className="spinner" />
-        <span style={{ marginLeft: '1rem', color: '#6b7280' }}>Loading editor workspace...</span>
-      </div>
-    );
-  }
-
   /* ── Derived values ── */
-  const activeSlide = presentation.slides[activeSlideIdx] || presentation.slides[0];
-  const currentThemeId = presentation.theme || 'classic';
+  const activeSlide = presentation ? (presentation.slides[activeSlideIdx] || presentation.slides[0]) : null;
+  const currentThemeId = presentation ? (presentation.theme || 'classic') : 'classic';
   const displayThemeId = hoveredTheme || currentThemeId;
   const displayTheme = THEMES[displayThemeId] || THEMES.classic;
+  const displayLayout = hoveredLayout || (activeSlide ? activeSlide.layout : 'bullets');
 
   // CSS variables injected inline onto the slide-frame
   const themeStyle = Object.entries(displayTheme)
@@ -517,6 +981,310 @@ export default function MainEditor() {
     return null;
   };
 
+  /* ── Render Slide Content Helper ── */
+  const renderSlideInner = (slide, idx, layout, themeId) => {
+    if (!slide) return null;
+    const imgData = slideImages.get(idx);
+    const primaryImg = imgData?.primary;
+    const isImgLoading = imageLoadingIdx === idx;
+
+    const renderBullets = (bullets) => {
+      return bullets.map((bullet, bIdx) => {
+        let iconSymbol = '✦';
+        if (autoApply) {
+          const text = bullet.toLowerCase();
+          if (text.includes('growth') || text.includes('revenue') || text.includes('increase') || text.includes('stats')) {
+            iconSymbol = '📈';
+          } else if (text.includes('feature') || text.includes('benefit') || text.includes('key') || text.includes('award')) {
+            iconSymbol = '⭐';
+          } else if (text.includes('step') || text.includes('phase') || text.includes('timeline')) {
+            iconSymbol = '➔';
+          } else if (text.includes('speed') || text.includes('fast') || text.includes('quick')) {
+            iconSymbol = '⚡';
+          } else if (text.includes('user') || text.includes('customer') || text.includes('client')) {
+            iconSymbol = '👤';
+          } else {
+            iconSymbol = '✓';
+          }
+        }
+        const key = `bullet-${bIdx}`;
+        return (
+          <li key={bIdx} className="slide-bullet-item">
+            <span className={`slide-bullet-dot ${autoApply ? 'auto-applied' : ''}`} style={{ color: 'var(--slide-bullet-color)' }}>
+              {iconSymbol}
+            </span>
+            <div
+              data-el-key={key}
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={e => handleBulletBlur(bIdx, e.target.innerText)}
+              onClick={e => handleElementClick(key, e)}
+              style={getElementStyle(key, { flex: 1, outline: 'none' })}
+            >
+              {bullet}
+            </div>
+          </li>
+        );
+      });
+    };
+
+    if (layout === 'title') {
+      const bgImg = primaryImg;
+      return (
+        <div className={`slide-layout-title ${autoApply ? 'auto-applied-title' : ''}`} style={bgImg ? { position: 'relative' } : {}}>
+          {bgImg && (
+            <div className="slide-title-bg-img">
+              <img src={bgImg.src} alt={bgImg.alt} />
+              <div className="slide-title-bg-overlay" />
+            </div>
+          )}
+          {isImgLoading && <div className="slide-img-shimmer slide-title-bg-img" />}
+          <div
+            data-el-key="title"
+            className={`slide-main-title ${selectedElements.includes('title') ? 'selected' : ''}`}
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={handleTitleBlur}
+            onClick={e => handleElementClick('title', e)}
+            style={getElementStyle('title', {
+              fontFamily: 'var(--slide-title-font)',
+              color: bgImg ? '#ffffff' : 'var(--slide-title-color)',
+              textShadow: bgImg ? '0 2px 12px rgba(0,0,0,0.55)' : 'none',
+              position: 'relative', zIndex: 3,
+            })}
+          >
+            {slide.title}
+          </div>
+          <div className="slide-title-divider" style={{ background: bgImg ? 'rgba(255,255,255,0.7)' : 'var(--slide-accent)', position: 'relative', zIndex: 3 }} />
+          <div
+            data-el-key="subtitle"
+            className="slide-main-subtitle"
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={e => handleBulletBlur(0, e.target.innerText)}
+            onClick={e => handleElementClick('subtitle', e)}
+            style={getElementStyle('subtitle', {
+              fontFamily: 'var(--slide-body-font)',
+              color: bgImg ? 'rgba(255,255,255,0.88)' : 'var(--slide-text-secondary)',
+              textShadow: bgImg ? '0 1px 6px rgba(0,0,0,0.5)' : 'none',
+              position: 'relative', zIndex: 3,
+            })}
+          >
+            {slide.content[0] || 'Add a subtitle here'}
+          </div>
+          <button
+            className="slide-img-refresh-btn"
+            title="Refresh image"
+            onClick={e => { e.stopPropagation(); refreshSlideImage(idx, slide, { title: presentation.title, topic: presentation.title }); }}
+          >
+            <RefreshCw size={11} />
+          </button>
+        </div>
+      );
+    }
+
+    if (layout === 'bullets') {
+      const sideImg = primaryImg;
+      return (
+        <div className={`slide-layout-bullets ${sideImg || isImgLoading ? 'has-image' : ''} ${autoApply ? 'auto-applied-bullets' : ''}`}>
+          <div className="slide-bullets-text">
+            <h2
+              data-el-key="title"
+              className={`slide-heading ${selectedElements.includes('title') ? 'selected' : ''}`}
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={handleTitleBlur}
+              onClick={e => handleElementClick('title', e)}
+              style={getElementStyle('title', { fontFamily: 'var(--slide-title-font)', color: 'var(--slide-title-color)' })}
+            >
+              {slide.title}
+            </h2>
+            <div className="slide-heading-bar" style={{ background: 'var(--slide-accent)' }} />
+            <ul className="slide-bullet-list" style={{ fontFamily: 'var(--slide-body-font)', color: 'var(--slide-text)' }}>
+              {renderBullets(slide.content)}
+            </ul>
+          </div>
+          {(sideImg || isImgLoading) && (
+            <div className={`slide-bullets-img-col ${autoApply ? 'auto-applied-frame' : ''}`}>
+              {isImgLoading
+                ? <div className="slide-img-shimmer" style={{ width: '100%', height: '100%', borderRadius: 8 }} />
+                : <img
+                    src={sideImg.src}
+                    alt={sideImg.alt}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, display: 'block' }}
+                  />
+              }
+              <button
+                className="slide-img-refresh-btn"
+                title="Refresh image"
+                onClick={e => { e.stopPropagation(); refreshSlideImage(idx, slide, { title: presentation.title, topic: presentation.title }); }}
+              >
+                <RefreshCw size={11} />
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (layout === 'columns') {
+      return (
+        <div className={`slide-layout-columns ${autoApply ? 'auto-applied-columns' : ''}`}>
+          <h2
+            data-el-key="title"
+            className="slide-heading"
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={handleTitleBlur}
+            onClick={e => handleElementClick('title', e)}
+            style={getElementStyle('title', { fontFamily: 'var(--slide-title-font)', color: 'var(--slide-title-color)' })}
+          >
+            {slide.title}
+          </h2>
+          <div className="slide-heading-bar" style={{ background: 'var(--slide-accent)' }} />
+          <div className="slide-columns-grid">
+            {[0,1,2].map(i => {
+              const text = slide.content[i] || `Column ${i + 1} content`;
+              const key = `column-${i}`;
+              return (
+                <div
+                  key={i}
+                  className="slide-column-card"
+                  style={{ background: 'var(--slide-card-bg)', border: '1px solid var(--slide-border)' }}
+                >
+                  <div className="slide-column-num" style={{ color: 'var(--slide-accent)', fontFamily: 'var(--slide-title-font)' }}>
+                    0{i + 1}
+                  </div>
+                  <div
+                    data-el-key={key}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={e => handleBulletBlur(i, e.target.innerText)}
+                    onClick={e => handleElementClick(key, e)}
+                    style={getElementStyle(key, { fontFamily: 'var(--slide-body-font)', color: 'var(--slide-text)', outline: 'none', fontSize: '0.95rem' })}
+                  >
+                    {text}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    if (layout === 'stats') {
+      return (
+        <div className={`slide-layout-stats ${autoApply ? 'auto-applied-stats' : ''}`}>
+          <h2
+            data-el-key="title"
+            className="slide-heading"
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={handleTitleBlur}
+            onClick={e => handleElementClick('title', e)}
+            style={getElementStyle('title', { fontFamily: 'var(--slide-title-font)', color: 'var(--slide-title-color)' })}
+          >
+            {slide.title}
+          </h2>
+          <div className="slide-heading-bar" style={{ background: 'var(--slide-accent)' }} />
+          <div className="slide-stats-grid">
+            {[0,1,2].map(i => {
+              const stat = slide.content[i] || `Metric ${i + 1}`;
+              const valKey = `stat-val-${i}`;
+              const lblKey = `stat-lbl-${i}`;
+              return (
+                <div
+                  key={i}
+                  className="slide-stat-card"
+                  style={{ background: 'var(--slide-card-bg)', border: '1px solid var(--slide-border)' }}
+                >
+                  <div
+                    className="slide-stat-value"
+                    data-el-key={valKey}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={e => handleBulletBlur(i, e.target.innerText)}
+                    onClick={e => handleElementClick(valKey, e)}
+                    style={getElementStyle(valKey, { color: 'var(--slide-accent)', fontFamily: 'var(--slide-title-font)', outline: 'none' })}
+                  >
+                    {stat}
+                  </div>
+                  <div 
+                    className="slide-stat-label" 
+                    data-el-key={lblKey}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onClick={e => handleElementClick(lblKey, e)}
+                    style={getElementStyle(lblKey, { color: 'var(--slide-text-secondary)', fontFamily: 'var(--slide-body-font)', outline: 'none' })}
+                  >
+                    Key Metric {i + 1}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    if (layout === 'timeline') {
+      return (
+        <div className={`slide-layout-timeline ${autoApply ? 'auto-applied-timeline' : ''}`}>
+          <h2
+            data-el-key="title"
+            className="slide-heading"
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={handleTitleBlur}
+            onClick={e => handleElementClick('title', e)}
+            style={getElementStyle('title', { fontFamily: 'var(--slide-title-font)', color: 'var(--slide-title-color)' })}
+          >
+            {slide.title}
+          </h2>
+          <div className="slide-heading-bar" style={{ background: 'var(--slide-accent)' }} />
+          <div className="slide-timeline-track">
+            <div className="slide-timeline-line" style={{ background: 'var(--slide-border)' }} />
+            {(slide.content.length < 3
+              ? [...slide.content, ...Array(3 - slide.content.length).fill('Milestone')]
+              : slide.content.slice(0, 4)
+            ).map((item, i) => {
+              const key = `timeline-${i}`;
+              return (
+                <div key={i} className={`slide-timeline-node node-${i % 2 === 0 ? 'top' : 'bottom'}`}>
+                  <div className="slide-tl-dot" style={{ background: 'var(--slide-accent)' }} />
+                  <div
+                    className="slide-tl-card"
+                    data-el-key={key}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={e => handleBulletBlur(i, e.target.innerText)}
+                    onClick={e => handleElementClick(key, e)}
+                    style={getElementStyle(key, { background: 'var(--slide-card-bg)', border: '1px solid var(--slide-border)', color: 'var(--slide-text)', fontFamily: 'var(--slide-body-font)', outline: 'none' })}
+                  >
+                    {item}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  /* ── Loading ── */
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f3f4f6' }}>
+        <div className="spinner" />
+        <span style={{ marginLeft: '1rem', color: '#6b7280' }}>Loading editor workspace...</span>
+      </div>
+    );
+  }
+
   /* ═══════ RENDER ═══════ */
   return (
     <div className="adv-editor-layout" data-theme={currentThemeId}>
@@ -545,6 +1313,14 @@ export default function MainEditor() {
           <button className="adv-tool-btn"><Play size={16} /> Present</button>
         </div>
         <div className="adv-topbar-right">
+          <button 
+            onClick={() => setIsCompareMode(!isCompareMode)}
+            className={`adv-btn ${isCompareMode ? 'adv-btn-primary' : 'adv-btn-secondary'}`}
+            style={{ marginRight: '0.5rem', border: '1px solid #a855f7' }}
+          >
+            <Sparkles size={14} className={isCompareMode ? 'spinning' : ''} />
+            {isCompareMode ? 'Exit Compare' : 'Compare Mode'}
+          </button>
           <button onClick={handleSave} className="adv-btn adv-btn-secondary" disabled={saving}>
             <Save size={16} /> {saving ? 'Saving...' : 'Save'}
           </button>
@@ -599,37 +1375,107 @@ export default function MainEditor() {
         <aside className="adv-drawer">
           {activeSidebarTab === 'templates' && (
             <div className="adv-drawer-content">
-              <h3>Layouts</h3>
-              <div className="adv-layout-grid">
-                {['title','bullets','columns','stats','timeline'].map(l => (
-                  <div
-                    key={l}
-                    className={`adv-layout-thumb ${activeSlide.layout === l ? 'active' : ''}`}
-                    onClick={() => handleLayoutChange(l)}
-                  >
-                    <div className="layout-thumb-icon">
-                      <LayoutThumbIcon type={l} />
-                    </div>
-                    <span>{l.charAt(0).toUpperCase() + l.slice(1)}</span>
+              
+              {/* AI Auto Apply and Settings option */}
+              <div className="ai-options-banner">
+                <label className="ai-toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={autoApply}
+                    onChange={(e) => setAutoApply(e.target.checked)}
+                  />
+                  <div className="ai-toggle-text">
+                    <span className="toggle-title">⚡ Auto-Apply AI Design</span>
+                    <span className="toggle-desc">Automatically set matching theme, layout, fonts, and spacing.</span>
                   </div>
-                ))}
+                </label>
+              </div>
+
+              <div className="ai-rec-header-section">
+                <h3>Layouts</h3>
+                <span className="ai-rec-pill">AI Active</span>
+              </div>
+              
+              <div className="adv-layout-grid">
+                {layoutRecommendations.map(rec => {
+                  const l = rec.id;
+                  const isTopRec = layoutRecommendations[0]?.id === l;
+                  const isActive = activeSlide.layout === l;
+                  
+                  return (
+                    <div
+                      key={rec.id}
+                      className={`adv-layout-thumb ${isActive ? 'active' : ''} ${isTopRec ? 'recommended' : ''}`}
+                      onClick={() => handleLayoutChange(l)}
+                      onMouseEnter={() => setHoveredLayout(l)}
+                      onMouseLeave={() => setHoveredLayout(null)}
+                      style={{ position: 'relative' }}
+                    >
+                      {isTopRec && (
+                        <div className="ai-badge-card-corner" title="AI Recommended Layout">
+                          <Sparkles size={8} color="#fff" />
+                        </div>
+                      )}
+                      <div className="layout-thumb-icon">
+                        <LayoutThumbIcon type={l} />
+                      </div>
+                      
+                      <div className="layout-thumb-label-row">
+                        <span className="layout-name">{l.charAt(0).toUpperCase() + l.slice(1)}</span>
+                        {isTopRec && <span className="layout-score">{rec.score}%</span>}
+                      </div>
+
+                      {isTopRec && (
+                        <div className="layout-rec-footer" onClick={e => e.stopPropagation()}>
+                          <button className="btn-why-small" onClick={() => setExplainingId(explainingId === l ? null : l)}>
+                            Why?
+                          </button>
+                          {explainingId === l && (
+                            <div className="ai-explain-tooltip">
+                              <div className="tooltip-title">★ Recommended ({rec.score}% match)</div>
+                              <div className="tooltip-desc">{rec.reason}</div>
+                              <div className="tooltip-best">Best for: {rec.bestFor}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               <h3 style={{ marginTop: '2rem' }}>Visual Themes</h3>
               <p className="adv-hint-text">Hover to preview · Click to apply</p>
-              <div className="adv-theme-grid">
-                {Object.entries(THEMES).map(([tid, theme]) => (
-                  <ThemeTile
-                    key={tid}
-                    id={tid}
-                    theme={theme}
-                    isActive={currentThemeId === tid}
-                    onSelect={handleThemeChange}
-                    onHover={setHoveredTheme}
-                    onLeave={() => setHoveredTheme(null)}
-                  />
-                ))}
+
+
+
+              <div className="adv-theme-grid" style={{ marginTop: '1rem' }}>
+                {themeRecommendations.map(rec => {
+                  const tid = rec.id;
+                  const theme = THEMES[tid];
+                  const isTopTheme = themeRecommendations[0]?.id === tid;
+                  return (
+                    <div key={tid} style={{ position: 'relative' }}>
+                      <ThemeTile
+                        id={tid}
+                        theme={theme}
+                        isActive={currentThemeId === tid}
+                        onSelect={handleThemeChange}
+                        onHover={setHoveredTheme}
+                        onLeave={() => setHoveredTheme(null)}
+                      />
+                      {isTopTheme && (
+                        <div className="ai-theme-badge-dot" title="AI Recommended Theme">
+                          <Sparkles size={8} color="#fff" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
+
+
+
             </div>
           )}
 
@@ -639,9 +1485,9 @@ export default function MainEditor() {
               slide={activeSlide}
               presentationMeta={{
                 title: presentation.title,
-                topic: presentation.title,
-                audience: '',
-                tone: 'professional',
+                topic: presentation.topic || presentation.title,
+                audience: presentation.audience || '',
+                tone: presentation.tone || 'professional',
               }}
               usedImageIds={usedImageIdsRef.current}
               onAddImage={handleAddImageFromPanel}
@@ -653,260 +1499,238 @@ export default function MainEditor() {
             CENTRAL CANVAS
         ══════════════════════════════════════════ */}
         <main className="adv-canvas-area">
-          <div className="adv-canvas-wrapper">
-            {/*
-              KEY = slideIdx + layout + themeId
-              Forces full unmount/remount on any of these changes,
-              clearing contentEditable DOM state and preventing stacking.
-            */}
-            <div
-              key={`${activeSlideIdx}-${activeSlide.layout}-${displayThemeId}`}
-              className={`slide-frame layout-${activeSlide.layout} theme-${displayThemeId} ${isTransitioning ? 'slide-transitioning' : ''}`}
-              style={themeStyle}
-              onClick={() => setSelectedElement('background')}
-            >
-              {/* Unique decorative elements per theme */}
-              <SlideThemeDecor theme={displayThemeId} />
-
-              {/* Slide content layer */}
-              <div className="slide-content-layer">
-
-                {/* ── TITLE LAYOUT ── */}
-                {activeSlide.layout === 'title' && (() => {
-                  const imgData = slideImages.get(activeSlideIdx);
-                  const bgImg   = imgData?.primary;
-                  const isImgLoading = imageLoadingIdx === activeSlideIdx;
-                  return (
-                    <div className="slide-layout-title" style={bgImg ? { position: 'relative' } : {}}>
-                      {/* Full-bleed background image */}
-                      {bgImg && (
-                        <div className="slide-title-bg-img">
-                          <img src={bgImg.src} alt={bgImg.alt} />
-                          <div className="slide-title-bg-overlay" />
-                        </div>
-                      )}
-                      {isImgLoading && <div className="slide-img-shimmer slide-title-bg-img" />}
-                      <div
-                        className={`slide-main-title ${selectedElement === 'title' ? 'selected' : ''}`}
-                        contentEditable
-                        suppressContentEditableWarning
-                        onBlur={handleTitleBlur}
-                        onClick={e => { e.stopPropagation(); setSelectedElement('title'); }}
-                        style={{
-                          fontFamily: 'var(--slide-title-font)',
-                          color: bgImg ? '#ffffff' : 'var(--slide-title-color)',
-                          textShadow: bgImg ? '0 2px 12px rgba(0,0,0,0.55)' : 'none',
-                          position: 'relative', zIndex: 3,
-                        }}
-                      >
-                        {activeSlide.title}
-                      </div>
-                      <div className="slide-title-divider" style={{ background: bgImg ? 'rgba(255,255,255,0.7)' : 'var(--slide-accent)', position: 'relative', zIndex: 3 }} />
-                      <div
-                        className="slide-main-subtitle"
-                        contentEditable
-                        suppressContentEditableWarning
-                        onBlur={e => handleBulletBlur(0, e.target.innerText)}
-                        style={{
-                          fontFamily: 'var(--slide-body-font)',
-                          color: bgImg ? 'rgba(255,255,255,0.88)' : 'var(--slide-text-secondary)',
-                          textShadow: bgImg ? '0 1px 6px rgba(0,0,0,0.5)' : 'none',
-                          position: 'relative', zIndex: 3,
-                        }}
-                      >
-                        {activeSlide.content[0] || 'Add a subtitle here'}
-                      </div>
-                      {/* Image refresh btn */}
-                      <button
-                        className="slide-img-refresh-btn"
-                        title="Refresh image"
-                        onClick={e => { e.stopPropagation(); refreshSlideImage(activeSlideIdx, activeSlide, { title: presentation.title, topic: presentation.title }); }}
-                      >
-                        <RefreshCw size={11} />
-                      </button>
-                    </div>
-                  );
-                })()}
-
-                {/* ── BULLETS LAYOUT ── */}
-                {activeSlide.layout === 'bullets' && (() => {
-                  const imgData = slideImages.get(activeSlideIdx);
-                  const sideImg = imgData?.primary;
-                  const isImgLoading = imageLoadingIdx === activeSlideIdx;
-                  return (
-                    <div className={`slide-layout-bullets ${sideImg || isImgLoading ? 'has-image' : ''}`}>
-                      <div className="slide-bullets-text">
-                        <h2
-                          className={`slide-heading ${selectedElement === 'title' ? 'selected' : ''}`}
-                          contentEditable
-                          suppressContentEditableWarning
-                          onBlur={handleTitleBlur}
-                          onClick={e => { e.stopPropagation(); setSelectedElement('title'); }}
-                          style={{ fontFamily: 'var(--slide-title-font)', color: 'var(--slide-title-color)' }}
-                        >
-                          {activeSlide.title}
-                        </h2>
-                        <div className="slide-heading-bar" style={{ background: 'var(--slide-accent)' }} />
-                        <ul className="slide-bullet-list" style={{ fontFamily: 'var(--slide-body-font)', color: 'var(--slide-text)' }}>
-                          {activeSlide.content.map((bullet, bIdx) => (
-                            <li key={bIdx} className="slide-bullet-item">
-                              <span className="slide-bullet-dot" style={{ color: 'var(--slide-bullet-color)' }}>✦</span>
-                              <div
-                                contentEditable
-                                suppressContentEditableWarning
-                                onBlur={e => handleBulletBlur(bIdx, e.target.innerText)}
-                                style={{ flex: 1, outline: 'none' }}
-                              >
-                                {bullet}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      {/* Side image */}
-                      {(sideImg || isImgLoading) && (
-                        <div className="slide-bullets-img-col">
-                          {isImgLoading
-                            ? <div className="slide-img-shimmer" style={{ width: '100%', height: '100%', borderRadius: 8 }} />
-                            : <img
-                                src={sideImg.src}
-                                alt={sideImg.alt}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, display: 'block' }}
-                              />
-                          }
-                          <button
-                            className="slide-img-refresh-btn"
-                            title="Refresh image"
-                            onClick={e => { e.stopPropagation(); refreshSlideImage(activeSlideIdx, activeSlide, { title: presentation.title, topic: presentation.title }); }}
-                          >
-                            <RefreshCw size={11} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* ── COLUMNS LAYOUT ── */}
-                {activeSlide.layout === 'columns' && (
-                  <div className="slide-layout-columns">
-                    <h2
-                      className="slide-heading"
-                      contentEditable
-                      suppressContentEditableWarning
-                      onBlur={handleTitleBlur}
-                      style={{ fontFamily: 'var(--slide-title-font)', color: 'var(--slide-title-color)' }}
-                    >
-                      {activeSlide.title}
-                    </h2>
-                    <div className="slide-heading-bar" style={{ background: 'var(--slide-accent)' }} />
-                    <div className="slide-columns-grid">
-                      {[0,1,2].map(i => {
-                        const text = activeSlide.content[i] || `Column ${i + 1} content`;
-                        return (
-                          <div
-                            key={i}
-                            className="slide-column-card"
-                            style={{ background: 'var(--slide-card-bg)', border: '1px solid var(--slide-border)' }}
-                          >
-                            <div className="slide-column-num" style={{ color: 'var(--slide-accent)', fontFamily: 'var(--slide-title-font)' }}>
-                              0{i + 1}
-                            </div>
-                            <div
-                              contentEditable
-                              suppressContentEditableWarning
-                              onBlur={e => handleBulletBlur(i, e.target.innerText)}
-                              style={{ fontFamily: 'var(--slide-body-font)', color: 'var(--slide-text)', outline: 'none', fontSize: '0.95rem' }}
-                            >
-                              {text}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── STATS LAYOUT ── */}
-                {activeSlide.layout === 'stats' && (
-                  <div className="slide-layout-stats">
-                    <h2
-                      className="slide-heading"
-                      contentEditable
-                      suppressContentEditableWarning
-                      onBlur={handleTitleBlur}
-                      style={{ fontFamily: 'var(--slide-title-font)', color: 'var(--slide-title-color)' }}
-                    >
-                      {activeSlide.title}
-                    </h2>
-                    <div className="slide-heading-bar" style={{ background: 'var(--slide-accent)' }} />
-                    <div className="slide-stats-grid">
-                      {[0,1,2].map(i => {
-                        const stat = activeSlide.content[i] || `Metric ${i + 1}`;
-                        return (
-                          <div
-                            key={i}
-                            className="slide-stat-card"
-                            style={{ background: 'var(--slide-card-bg)', border: '1px solid var(--slide-border)' }}
-                          >
-                            <div
-                              className="slide-stat-value"
-                              contentEditable
-                              suppressContentEditableWarning
-                              onBlur={e => handleBulletBlur(i, e.target.innerText)}
-                              style={{ color: 'var(--slide-accent)', fontFamily: 'var(--slide-title-font)', outline: 'none' }}
-                            >
-                              {stat}
-                            </div>
-                            <div className="slide-stat-label" style={{ color: 'var(--slide-text-secondary)', fontFamily: 'var(--slide-body-font)' }}>
-                              Key Metric {i + 1}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── TIMELINE LAYOUT ── */}
-                {activeSlide.layout === 'timeline' && (
-                  <div className="slide-layout-timeline">
-                    <h2
-                      className="slide-heading"
-                      contentEditable
-                      suppressContentEditableWarning
-                      onBlur={handleTitleBlur}
-                      style={{ fontFamily: 'var(--slide-title-font)', color: 'var(--slide-title-color)' }}
-                    >
-                      {activeSlide.title}
-                    </h2>
-                    <div className="slide-heading-bar" style={{ background: 'var(--slide-accent)' }} />
-                    <div className="slide-timeline-track">
-                      <div className="slide-timeline-line" style={{ background: 'var(--slide-border)' }} />
-                      {(activeSlide.content.length < 3
-                        ? [...activeSlide.content, ...Array(3 - activeSlide.content.length).fill('Milestone')]
-                        : activeSlide.content.slice(0, 4)
-                      ).map((item, i) => (
-                        <div key={i} className={`slide-timeline-node node-${i % 2 === 0 ? 'top' : 'bottom'}`}>
-                          <div className="slide-tl-dot" style={{ background: 'var(--slide-accent)' }} />
-                          <div
-                            className="slide-tl-card"
-                            contentEditable
-                            suppressContentEditableWarning
-                            onBlur={e => handleBulletBlur(i, e.target.innerText)}
-                            style={{ background: 'var(--slide-card-bg)', border: '1px solid var(--slide-border)', color: 'var(--slide-text)', fontFamily: 'var(--slide-body-font)', outline: 'none' }}
-                          >
-                            {item}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
+          
+          {/* Continuous recommendation toast */}
+          {recommendationToast && (
+            <div className="ai-recommendation-toast shadow-lg">
+              <div className="toast-header">
+                <Sparkles size={14} className="toast-spark" />
+                <span>AI Recommendation Updated</span>
+                <button className="toast-close" onClick={() => setRecommendationToast(null)}>×</button>
+              </div>
+              <div className="toast-body">
+                <p>We recommend switching to <b>{recommendationToast.name} Layout</b>.</p>
+                <span className="toast-desc">{recommendationToast.reason}</span>
+                <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button 
+                    className="toast-apply-btn"
+                    onClick={() => {
+                      handleLayoutChange(recommendationToast.id);
+                      setRecommendationToast(null);
+                    }}
+                  >
+                    Apply Design
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {isCompareMode ? (
+            /* ── Compare Mode Split Screen ── */
+            <div className="ai-compare-split-view">
+              <div className="compare-pane compare-pane-current">
+                <div className="compare-pane-header">
+                  <h4>Current Design Look</h4>
+                  <span className="compare-info-tag">Theme: {currentThemeId.toUpperCase()} · Layout: {activeSlide.layout.toUpperCase()}</span>
+                </div>
+                <div className="compare-canvas-box">
+                  <div
+                    className={`slide-frame layout-${activeSlide.layout} theme-${currentThemeId}`}
+                    style={Object.entries(THEMES[currentThemeId] || THEMES.classic)
+                      .filter(([k]) => k.startsWith('--'))
+                      .reduce((acc, [k, v]) => ({ ...acc, [k]: v }), {})}
+                  >
+                    <SlideThemeDecor theme={currentThemeId} />
+                    <div className="slide-content-layer">
+                      {renderSlideInner(activeSlide, activeSlideIdx, activeSlide.layout, currentThemeId)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="compare-pane compare-pane-recommended">
+                <div className="compare-pane-header">
+                  <h4 className="flex items-center gap-1 text-purple-600">
+                    <Sparkles size={14} />
+                    AI Recommended Look
+                  </h4>
+                  <span className="compare-info-tag match-success">
+                    Score: Theme {themeRecommendations[0]?.score}% · Layout {layoutRecommendations[0]?.score}%
+                  </span>
+                </div>
+                <div className="compare-canvas-box recommended-glow">
+                  <div
+                    className={`slide-frame layout-${layoutRecommendations[0]?.id || 'bullets'} theme-${themeRecommendations[0]?.id || 'classic'}`}
+                    style={Object.entries(THEMES[themeRecommendations[0]?.id || 'classic'] || THEMES.classic)
+                      .filter(([k]) => k.startsWith('--'))
+                      .reduce((acc, [k, v]) => ({ ...acc, [k]: v }), {})}
+                  >
+                    <SlideThemeDecor theme={themeRecommendations[0]?.id || 'classic'} />
+                    <div className="slide-content-layer">
+                      {renderSlideInner(
+                        activeSlide, 
+                        activeSlideIdx, 
+                        layoutRecommendations[0]?.id || 'bullets', 
+                        themeRecommendations[0]?.id || 'classic'
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="compare-actions-bar">
+                  <p className="compare-explain">{themeRecommendations[0]?.reason}</p>
+                  <button
+                    className="btn btn-primary shadow-md"
+                    style={{ padding: '0.45rem 1.25rem', fontSize: '0.8rem' }}
+                    onClick={() => {
+                      handleThemeChange(themeRecommendations[0]?.id);
+                      handleLayoutChange(layoutRecommendations[0]?.id);
+                      setIsCompareMode(false);
+                    }}
+                  >
+                    Apply AI Recommended Design
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* ── Standard Canvas ── */
+            <div className="adv-canvas-wrapper" onClick={handleCanvasClick} style={{ position: 'relative' }}>
+              <div
+                key={`${activeSlideIdx}-${displayLayout}-${displayThemeId}`}
+                className={`slide-frame layout-${displayLayout} theme-${displayThemeId} ${isTransitioning ? 'slide-transitioning' : ''} ${autoApply ? 'auto-applied-slide-frame' : ''}`}
+                style={themeStyle}
+                onClick={() => setSelectedElement('background')}
+              >
+                {/* Visual feedback for auto apply */}
+                {autoApply && (
+                  <div className="auto-apply-pill-label" title="AI Auto Apply is active on spacing, colors and elements.">
+                    <Sparkles size={9} />
+                    <span>AI Optimized Style</span>
+                  </div>
+                )}
+                
+                {/* Unique decorative elements per theme */}
+                <SlideThemeDecor theme={displayThemeId} />
+
+                {/* Slide content layer */}
+                <div className="slide-content-layer">
+                  {renderSlideInner(activeSlide, activeSlideIdx, displayLayout, displayThemeId)}
+                </div>
+              </div>
+
+              {/* FLOATING SELECTION OVERLAYS */}
+              {!isCompareMode && selectedElements.map(key => {
+                const el = document.querySelector(`[data-el-key="${key}"]`);
+                if (!el) return null;
+                const container = document.querySelector('.slide-frame');
+                if (!container) return null;
+                
+                const elRect = el.getBoundingClientRect();
+                const contRect = container.getBoundingClientRect();
+                
+                const top = elRect.top - contRect.top;
+                const left = elRect.left - contRect.left;
+                const width = elRect.width;
+                const height = elRect.height;
+                
+                const elStyles = (activeSlide?.styles instanceof Map ? Object.fromEntries(activeSlide.styles) : activeSlide?.styles)?.[key] || {};
+                const isLocked = elStyles.locked;
+                
+                return (
+                  <div 
+                    key={key}
+                    className={`adv-selection-box ${isLocked ? 'locked' : ''}`}
+                    style={{
+                      position: 'absolute',
+                      top: top - 2,
+                      left: left - 2,
+                      width: width + 4,
+                      height: height + 4,
+                      border: isLocked ? '1.5px dashed #f43f5e' : '1.5px solid #a855f7',
+                      zIndex: 1000,
+                      cursor: isLocked ? 'not-allowed' : 'move'
+                    }}
+                    onMouseDown={(e) => handleDragStart(key, e)}
+                  >
+                    {!isLocked && (
+                      <>
+                        <div className="sel-handle sel-tl" style={{ position: 'absolute', top: -4, left: -4 }} onMouseDown={e => handleResizeStart(key, e)} />
+                        <div className="sel-handle sel-tr" style={{ position: 'absolute', top: -4, right: -4 }} onMouseDown={e => handleResizeStart(key, e)} />
+                        <div className="sel-handle sel-bl" style={{ position: 'absolute', bottom: -4, left: -4 }} onMouseDown={e => handleResizeStart(key, e)} />
+                        <div className="sel-handle sel-br" style={{ position: 'absolute', bottom: -4, right: -4 }} onMouseDown={e => handleResizeStart(key, e)} />
+                        
+                        {/* Rotation Handle */}
+                        <div 
+                          className="sel-rotate-handle" 
+                          style={{
+                            position: 'absolute',
+                            bottom: -22,
+                            left: '50%',
+                            marginLeft: -6,
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            background: '#a855f7',
+                            border: '2px solid #fff',
+                            cursor: 'alias',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                          }} 
+                          onMouseDown={e => handleRotateStart(key, e)}
+                        />
+                      </>
+                    )}
+                    {isLocked && (
+                      <div style={{ position: 'absolute', top: -10, right: -10, background: '#f43f5e', color: '#fff', borderRadius: '50%', padding: '2px' }}>
+                        <Lock size={10} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* CONTEXTUAL FLOATING TOOLBAR */}
+              {!isCompareMode && toolbarPosition && selectedElements.length > 0 && (
+                <ContextualToolbar
+                  activeElement={selectedElements[0]}
+                  style={getElementStyle(selectedElements[0])}
+                  onUpdateStyle={(changes) => {
+                    selectedElements.forEach(key => handleUpdateElementStyle(key, changes));
+                  }}
+                  onDuplicate={() => handleDuplicateElement(selectedElements[0])}
+                  onDelete={() => {
+                    selectedElements.forEach(key => handleDeleteElement(key));
+                    setSelectedElements([]);
+                  }}
+                  onLockToggle={() => {
+                    const key = selectedElements[0];
+                    const currentLocked = !!(activeSlide?.styles instanceof Map ? activeSlide.styles.get(key) : activeSlide?.styles?.[key])?.locked;
+                    handleUpdateElementStyle(key, { locked: !currentLocked });
+                  }}
+                  isLocked={!!(activeSlide?.styles instanceof Map ? activeSlide.styles.get(selectedElements[0]) : activeSlide?.styles?.[selectedElements[0]])?.locked}
+                  onCopyStyle={() => {
+                    const styleCopy = { ...getElementStyle(selectedElements[0]) };
+                    delete styleCopy.left;
+                    delete styleCopy.top;
+                    delete styleCopy.transform;
+                    delete styleCopy.locked;
+                    setStyleClipboard(styleCopy);
+                  }}
+                  onPasteStyle={() => {
+                    if (styleClipboard) {
+                      selectedElements.forEach(key => handleUpdateElementStyle(key, styleClipboard));
+                    }
+                  }}
+                  hasCopiedStyle={!!styleClipboard}
+                  onBringForward={() => handleUpdateElementStyle(selectedElements[0], { zIndex: 10 })}
+                  onSendBackward={() => handleUpdateElementStyle(selectedElements[0], { zIndex: 1 })}
+                  onAiAction={(actionType) => handleAiTextAction(selectedElements[0], actionType)}
+                  onClose={() => setSelectedElements([])}
+                  positionStyle={toolbarPosition}
+                />
+              )}
+            </div>
+          )}
 
           {/* ── Filmstrip ── */}
           <div className="adv-filmstrip">
@@ -963,7 +1787,7 @@ export default function MainEditor() {
               <textarea
                 className="adv-notes-input"
                 placeholder="Add speaker notes here..."
-                value={activeSlide.note || ''}
+                value={activeSlide ? (activeSlide.note || '') : ''}
                 onChange={e => {
                   setPresentation(prev => ({
                     ...prev,
