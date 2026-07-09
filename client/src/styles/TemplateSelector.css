@@ -491,3 +491,313 @@
 @media (max-width: 480px) {
   .ts-grid { grid-template-columns: 1fr; }
 }
+
+/* Search Bar Styles */
+.ts-search-container {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  max-width: 400px;
+  margin-bottom: 1.25rem;
+  transition: all 0.15s ease;
+}
+
+.ts-search-container:focus-within {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.ts-search-icon {
+  color: #94a3b8;
+  margin-right: 0.6rem;
+  flex-shrink: 0;
+}
+
+.ts-search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.85rem;
+  color: #0f172a;
+  width: 100%;
+}
+
+.ts-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.ts-search-clear {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.ts-search-clear:hover {
+  color: #ef4444;
+  background-color: #f1f5f9;
+}
+
+/* AI badge hover style / visual adjustments if needed */
+.ts-ai-badge {
+  transition: opacity 0.15s ease, right 0.15s ease;
+}
+
+/* Hover Overlay Styles */
+.ts-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  aspect-ratio: 16 / 9;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 8;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+}
+
+.ts-card:hover .ts-card-overlay,
+.ts-card:focus-within .ts-card-overlay {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ts-overlay-use-btn {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ts-overlay-use-btn:hover {
+  background: #4338ca;
+  transform: scale(1.05);
+}
+
+.ts-overlay-prev-btn {
+  background: rgba(255, 255, 255, 0.95);
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.ts-overlay-prev-btn:hover {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #94a3b8;
+  transform: scale(1.05);
+}
+
+/* Favorite Button transition & hover rules */
+.ts-favorite-btn {
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.15s ease;
+}
+
+.ts-card:hover .ts-favorite-btn,
+.ts-card:focus-within .ts-favorite-btn,
+.ts-favorite-btn.favorited {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ts-favorite-btn:hover {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Upload Section & Spinner Styles */
+.ts-upload-dropzone.drag-active {
+  border-color: #4f46e5 !important;
+  background: rgba(79, 70, 229, 0.04) !important;
+}
+
+.ts-upload-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(79, 70, 229, 0.1);
+  border-left-color: #4f46e5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Compatibility tag styles */
+.ts-compatibility-tag {
+  background: rgba(79, 70, 229, 0.08) !important;
+  color: #4f46e5 !important;
+  font-weight: 700 !important;
+}
+
+/* Recently Used Row Styles */
+.ts-recent-section {
+  margin-bottom: 1.75rem;
+  animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.ts-recent-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ts-recent-row {
+  display: flex;
+  gap: 0.85rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+}
+
+.ts-recent-card {
+  flex-shrink: 0;
+  width: 140px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.ts-recent-card:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.ts-recent-card.selected {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+}
+
+.ts-recent-preview {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.ts-recent-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+/* Animations transitions */
+.ts-card {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.ts-card:hover {
+  transform: translateY(-4px) scale(1.02) !important;
+  box-shadow: 0 10px 20px -8px rgba(0, 0, 0, 0.08), 0 20px 40px -12px rgba(0, 0, 0, 0.12) !important;
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes badgeScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+}
+
+.ts-ai-badge {
+  animation: badgeScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes heartScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ts-favorite-btn {
+  animation: heartScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scaleUpModal {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.ts-preview-modal {
+  animation: scaleUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+.ts-upload-section > div,
+.ts-analysis-panel {
+  animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+

@@ -1,174 +1,78 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Presentation, CheckCircle, ArrowRight, Eye, X } from 'lucide-react';
+import { Presentation, CheckCircle, ArrowRight, Eye, X, Search, Heart } from 'lucide-react';
+import { useTemplateFilters } from '../hooks/useTemplateFilters';
+import TemplatePreviewModal from '../components/TemplatePreviewModal';
+import UploadTemplateSection from '../components/UploadTemplateSection';
+import { TEMPLATES } from '../data/templates';
 import '../styles/TemplateSelector.css';
 
-/* ════════════════════════════════════════════════
-   THEME DEFINITIONS  (10 Professional Themes)
-════════════════════════════════════════════════ */
-const TEMPLATES = [
-  {
-    id: 'corporate',
-    name: 'Corporate',
-    category: 'Business',
-    tags: ['Business', 'Executive'],
-    desc: 'Clean, navy-driven layouts built for boardrooms and stakeholder reports.',
-    users: 'Executives, Consultants, Analysts',
-    philosophy: 'Precision, authority, trust',
-    bg: '#1e3a5f',
-    accent: '#3b82f6',
-    text: '#ffffff',
-    secondary: 'rgba(255,255,255,0.12)',
-    card: 'rgba(255,255,255,0.1)',
-    font: 'Sora',
-  },
-  {
-    id: 'startup',
-    name: 'Startup Pitch',
-    category: 'Pitch',
-    tags: ['Startup', 'Investor'],
-    desc: 'Energetic gradients and bold typography to capture investor attention instantly.',
-    users: 'Founders, VCs, Product Teams',
-    philosophy: 'Energy, momentum, boldness',
-    bg: '#0f0f1a',
-    accent: '#6366f1',
-    text: '#ffffff',
-    secondary: 'rgba(99,102,241,0.15)',
-    card: 'rgba(99,102,241,0.12)',
-    font: 'Outfit',
-  },
-  {
-    id: 'academic',
-    name: 'Academic',
-    category: 'Education',
-    tags: ['Academic', 'Research'],
-    desc: 'Structured, serif-anchored layout ideal for papers, theses and seminar talks.',
-    users: 'Professors, Students, Researchers',
-    philosophy: 'Structure, depth, credibility',
-    bg: '#f5f0e8',
-    accent: '#92400e',
-    text: '#1c1917',
-    secondary: 'rgba(146,64,14,0.1)',
-    card: 'rgba(146,64,14,0.07)',
-    font: 'Merriweather',
-  },
-  {
-    id: 'technology',
-    name: 'Technology',
-    category: 'Tech',
-    tags: ['Tech', 'Engineering'],
-    desc: 'Dark terminal aesthetic with cyan accents — built for product demos and tech talks.',
-    users: 'Engineers, CTOs, Developers',
-    philosophy: 'Precision, innovation, clarity',
-    bg: '#0a0f1e',
-    accent: '#06b6d4',
-    text: '#e0f2fe',
-    secondary: 'rgba(6,182,212,0.1)',
-    card: 'rgba(6,182,212,0.08)',
-    font: 'Fira Code',
-  },
-  {
-    id: 'marketing',
-    name: 'Marketing',
-    category: 'Marketing',
-    tags: ['Marketing', 'Campaign'],
-    desc: 'Vibrant coral and magenta palette designed to make campaigns pop and convert.',
-    users: 'Marketers, Brand Managers, Agencies',
-    philosophy: 'Emotion, attention, brand identity',
-    bg: '#fff0f5',
-    accent: '#e11d74',
-    text: '#1a0010',
-    secondary: 'rgba(225,29,116,0.08)',
-    card: 'rgba(225,29,116,0.06)',
-    font: 'Inter',
-  },
-  {
-    id: 'finance',
-    name: 'Finance',
-    category: 'Business',
-    tags: ['Finance', 'Banking'],
-    desc: 'Conservative emerald palette conveying reliability for financial models and reports.',
-    users: 'CFOs, Accountants, Analysts',
-    philosophy: 'Trust, stability, data clarity',
-    bg: '#0d2818',
-    accent: '#10b981',
-    text: '#ecfdf5',
-    secondary: 'rgba(16,185,129,0.1)',
-    card: 'rgba(16,185,129,0.08)',
-    font: 'Inter',
-  },
-  {
-    id: 'healthcare',
-    name: 'Healthcare',
-    category: 'Healthcare',
-    tags: ['Medical', 'Healthcare'],
-    desc: 'Soft sky blues and clean whites for medical research, clinical and health presentations.',
-    users: 'Doctors, Researchers, Hospitals',
-    philosophy: 'Calm, compassion, clarity',
-    bg: '#f0f9ff',
-    accent: '#0284c7',
-    text: '#0c1e2e',
-    secondary: 'rgba(2,132,199,0.08)',
-    card: 'rgba(2,132,199,0.06)',
-    font: 'Inter',
-  },
-  {
-    id: 'creative',
-    name: 'Creative',
-    category: 'Creative',
-    tags: ['Design', 'Portfolio'],
-    desc: 'Warm amber and bold asymmetric blocks for designers, portfolios and creative agencies.',
-    users: 'Designers, Artists, Agencies',
-    philosophy: 'Expression, boldness, personality',
-    bg: '#fef3c7',
-    accent: '#d97706',
-    text: '#1c0d00',
-    secondary: 'rgba(217,119,6,0.1)',
-    card: 'rgba(217,119,6,0.08)',
-    font: 'Outfit',
-  },
-  {
-    id: 'minimal',
-    name: 'Minimal',
-    category: 'General',
-    tags: ['Clean', 'Minimal'],
-    desc: 'Pure white canvas with soft grey accents. Maximum focus on content, zero distraction.',
-    users: 'All professionals, Universal',
-    philosophy: 'Less is more — content first',
-    bg: '#ffffff',
-    accent: '#334155',
-    text: '#0f172a',
-    secondary: 'rgba(51,65,85,0.06)',
-    card: 'rgba(51,65,85,0.04)',
-    font: 'Inter',
-  },
-  {
-    id: 'dark',
-    name: 'Dark Mode',
-    category: 'Tech',
-    tags: ['Dark', 'Modern'],
-    desc: 'Deep charcoal with violet highlights — sleek, modern and easy on the eyes.',
-    users: 'Tech teams, Product managers, Developers',
-    philosophy: 'Sophistication, modernity, depth',
-    bg: '#0f0f14',
-    accent: '#a78bfa',
-    text: '#e2e8f0',
-    secondary: 'rgba(167,139,250,0.1)',
-    card: 'rgba(167,139,250,0.08)',
-    font: 'Inter',
-  },
-];
 
 const CATEGORIES = ['All', 'Business', 'Pitch', 'Education', 'Tech', 'Marketing', 'Healthcare', 'Creative', 'General'];
 
 /* ════════════════════════════════════════════════
    THUMBNAIL  (mini slide preview for each card)
 ════════════════════════════════════════════════ */
-function ThumbPreview({ t }) {
+function ThumbPreview({ t, isAiRecommended, isSelected, isFavorited, onToggleFavorite }) {
+  const handleFavoriteClick = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onToggleFavorite(t.id);
+  };
+
   return (
     <div className="ts-thumb" style={{ background: t.bg }}>
       {/* Decorative accent strip */}
       <div style={{ position: 'absolute', left: 0, top: 0, width: 4, bottom: 0, background: t.accent, opacity: 0.9 }} />
+
+      {/* Heart Favorite Button */}
+      <button
+        className={`ts-favorite-btn ${isFavorited ? 'favorited' : ''}`}
+        onClick={handleFavoriteClick}
+        style={{
+          position: 'absolute',
+          top: '0.75rem',
+          right: isSelected ? '2.75rem' : '0.75rem',
+          width: '28px',
+          height: '28px',
+          borderRadius: '50%',
+          background: t.card,
+          border: `1px solid ${t.accent}40`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          color: isFavorited ? '#ef4444' : t.text,
+          zIndex: 10,
+          padding: 0,
+          outline: 'none',
+        }}
+        aria-label={isFavorited ? "Remove from Favorites" : "Add to Favorites"}
+      >
+        <Heart size={15} fill={isFavorited ? '#ef4444' : 'none'} stroke={isFavorited ? '#ef4444' : 'currentColor'} />
+      </button>
+
+      {isAiRecommended && (
+        <div style={{
+          position: 'absolute',
+          top: '0.75rem',
+          right: isSelected ? '5.0rem' : '3.0rem',
+          fontSize: '0.65rem',
+          fontWeight: 700,
+          color: t.text,
+          opacity: 0.9,
+          background: t.card,
+          border: `1px solid ${t.accent}40`,
+          padding: '0.15rem 0.5rem',
+          borderRadius: '999px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '3px',
+          zIndex: 5,
+        }} className="ts-ai-badge">
+          <span>🤖 AI Recommended</span>
+        </div>
+      )}
 
       <div className="ts-thumb-title" style={{ color: t.text }}>{t.name}</div>
       <div className="ts-thumb-sub" style={{ color: t.text }}>AI Presentation</div>
@@ -195,53 +99,7 @@ function ThumbPreview({ t }) {
 /* ════════════════════════════════════════════════
    MODAL PREVIEW  (full 16:9 simulated slide)
 ════════════════════════════════════════════════ */
-function PreviewModal({ t, onClose, onSelect }) {
-  return (
-    <div className="ts-preview-overlay" onClick={onClose}>
-      <div className="ts-preview-modal" onClick={e => e.stopPropagation()}>
-        {/* Large simulated slide */}
-        <div className="ts-preview-slide" style={{ background: t.bg, position: 'relative' }}>
-          {/* Accent bar */}
-          <div style={{ position: 'absolute', left: 0, top: 0, width: 6, height: '100%', background: t.accent }} />
 
-          <div style={{ paddingLeft: '1rem' }}>
-            <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', color: t.accent, textTransform: 'uppercase', marginBottom: '0.4rem' }}>
-              {t.category} THEME
-            </div>
-            <div className="ts-preview-slide-title" style={{ color: t.text }}>{t.name}</div>
-            <div className="ts-preview-slide-sub" style={{ color: t.text }}>{t.philosophy}</div>
-          </div>
-
-          {/* 3 simulated content cards */}
-          <div className="ts-preview-slide-content" style={{ paddingLeft: '1rem' }}>
-            {['Key Points', 'Data Insights', 'Next Steps'].map((label, i) => (
-              <div key={i} className="ts-preview-card" style={{ background: t.card, color: t.text, border: `1px solid ${t.accent}30` }}>
-                <div style={{ width: 18, height: 18, borderRadius: 4, background: t.accent, marginBottom: '0.4rem', opacity: 0.7 }} />
-                <div style={{ fontWeight: 700, fontSize: '0.75rem', marginBottom: '0.25rem' }}>{label}</div>
-                <div style={{ height: 3, background: t.accent, borderRadius: 2, opacity: 0.3, marginBottom: 4 }} />
-                <div style={{ height: 3, width: '70%', background: t.accent, borderRadius: 2, opacity: 0.2 }} />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="ts-preview-footer">
-          <div>
-            <div className="ts-preview-name">{t.name}</div>
-            <div className="ts-preview-desc">{t.desc}<br /><b style={{ color: '#475569' }}>Best for:</b> {t.users}</div>
-          </div>
-          <div className="ts-preview-actions">
-            <button className="ts-preview-cancel" onClick={onClose}><X size={14} style={{ display: 'inline', marginRight: 4 }} />Close</button>
-            <button className="ts-preview-select" onClick={onSelect}>
-              <CheckCircle size={14} style={{ display: 'inline', marginRight: 4 }} />Use This Template
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ════════════════════════════════════════════════
    MAIN PAGE COMPONENT
@@ -249,26 +107,79 @@ function PreviewModal({ t, onClose, onSelect }) {
 export default function TemplateSelector() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Passed from CreatePresentation via location.state
   const presentationState = location.state || {};
 
   const [selectedId, setSelectedId] = useState(null);
+  const [uploadedTemplate, setUploadedTemplate] = useState(null);
   const [activeCategory, setActiveCategory] = useState('All');
   const [previewTemplate, setPreviewTemplate] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const filtered = useMemo(() =>
-    activeCategory === 'All'
-      ? TEMPLATES
-      : TEMPLATES.filter(t => t.category === activeCategory),
-    [activeCategory]
+  // Favorites state management
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const saved = localStorage.getItem('deckflow_favorite_templates');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const toggleFavorite = (id) => {
+    setFavorites(prev => {
+      const updated = prev.includes(id)
+        ? prev.filter(x => x !== id)
+        : [...prev, id];
+      localStorage.setItem('deckflow_favorite_templates', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Recently used templates state management
+  const [recentIds, setRecentIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('deckflow_recent_templates');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const addToRecentTemplates = (id) => {
+    if (!id || id.startsWith('uploaded-')) return;
+    try {
+      const saved = localStorage.getItem('deckflow_recent_templates');
+      let recents = saved ? JSON.parse(saved) : [];
+      recents = [id, ...recents.filter(x => x !== id)];
+      recents = recents.slice(0, 6);
+      localStorage.setItem('deckflow_recent_templates', JSON.stringify(recents));
+      setRecentIds(recents);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const { filteredTemplates, recommendedIds, compatibilityScores } = useTemplateFilters(
+    TEMPLATES,
+    activeCategory,
+    searchQuery,
+    presentationState
   );
 
-  const selectedTemplate = TEMPLATES.find(t => t.id === selectedId);
+  const selectedTemplate = TEMPLATES.find(t => t.id === selectedId) || uploadedTemplate;
 
   const handleSelect = (t) => {
     setSelectedId(t.id);
+    setUploadedTemplate(null);
     setPreviewTemplate(null);
+    if (t.id && !t.id.startsWith('uploaded-')) {
+      addToRecentTemplates(t.id);
+    }
+  };
+
+  const handleSelectUploadedTemplate = (customTemplate) => {
+    setUploadedTemplate(customTemplate);
+    setSelectedId(customTemplate.id);
   };
 
   const handleContinue = async () => {
@@ -280,7 +191,7 @@ export default function TemplateSelector() {
       state: {
         ...presentationState,
         selectedTheme: selectedId,
-        selectedTemplate: TEMPLATES.find(t => t.id === selectedId),
+        selectedTemplate: selectedTemplate,
       }
     });
   };
@@ -319,6 +230,48 @@ export default function TemplateSelector() {
         <h1 className="ts-page-title">Choose a Template</h1>
         <p className="ts-page-sub">Pick a visual theme. The AI will apply the layout, colors, and typography to your presentation automatically.</p>
 
+        {/* Search Bar */}
+        <div className="ts-search-container">
+          <Search size={16} className="ts-search-icon" />
+          <input
+            type="text"
+            className="ts-search-input"
+            placeholder="Search templates by name, category, or tags..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className="ts-search-clear" onClick={() => setSearchQuery('')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Recently Used Row */}
+        {recentIds.length > 0 && (
+          <div className="ts-recent-section">
+            <h3 className="ts-recent-title">Recently Used</h3>
+            <div className="ts-recent-row">
+              {recentIds.map(id => {
+                const template = TEMPLATES.find(t => t.id === id);
+                if (!template) return null;
+                return (
+                  <div
+                    key={id}
+                    className={`ts-recent-card ${selectedId === id ? 'selected' : ''}`}
+                    onClick={() => handleSelect(template)}
+                  >
+                    <div className="ts-recent-preview" style={{ background: template.bg }}>
+                      <div style={{ position: 'absolute', left: 0, top: 0, width: 3, bottom: 0, background: template.accent }} />
+                      <span className="ts-recent-name" style={{ color: template.text }}>{template.name}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Category filter */}
         <div className="ts-filter-bar">
           {CATEGORIES.map(cat => (
@@ -333,57 +286,73 @@ export default function TemplateSelector() {
         </div>
 
         {/* Template grid */}
-        <div className="ts-grid">
-          {filtered.map(t => (
-            <div
-              key={t.id}
-              className={`ts-card ${selectedId === t.id ? 'selected' : ''}`}
-              onClick={() => handleSelect(t)}
-            >
-              {selectedId === t.id && (
-                <div className="ts-selected-badge">✓</div>
-              )}
+        {filteredTemplates.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '4rem 2rem', width: '100%' }}>
+            <p className="ts-page-sub" style={{ margin: 0 }}>No templates found matching your search.</p>
+          </div>
+        ) : (
+          <div className="ts-grid">
+            {filteredTemplates.map(t => (
+              <div
+                key={t.id}
+                className={`ts-card ${selectedId === t.id ? 'selected' : ''}`}
+                onClick={() => handleSelect(t)}
+              >
+                {selectedId === t.id && (
+                  <div className="ts-selected-badge">✓</div>
+                )}
 
-              <ThumbPreview t={t} />
+                <ThumbPreview
+                  t={t}
+                  isAiRecommended={recommendedIds.has(t.id)}
+                  isSelected={selectedId === t.id}
+                  isFavorited={favorites.includes(t.id)}
+                  onToggleFavorite={toggleFavorite}
+                />
 
-              <div className="ts-card-info">
-                <div className="ts-card-name">{t.name}</div>
-                <div className="ts-card-desc">{t.desc}</div>
-                <div className="ts-card-tags">
-                  {t.tags.map(tag => (
-                    <span key={tag} className="ts-card-tag">{tag}</span>
-                  ))}
+                <div className="ts-card-info">
+                  <div className="ts-card-name">{t.name}</div>
+                  <div className="ts-card-desc">{t.desc}</div>
+                  <div className="ts-card-tags">
+                    {compatibilityScores[t.id] !== undefined && (
+                      <span className="ts-card-tag ts-compatibility-tag">
+                        ⚡ {compatibilityScores[t.id]}% Match
+                      </span>
+                    )}
+                    {t.tags.map(tag => (
+                      <span key={tag} className="ts-card-tag">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Hover Overlay Actions */}
+                <div className="ts-card-overlay">
+                  <button
+                    className="ts-overlay-use-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelect(t);
+                    }}
+                  >
+                    Use Template
+                  </button>
+                  <button
+                    className="ts-overlay-prev-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewTemplate(t);
+                    }}
+                  >
+                    <Eye size={13} style={{ display: 'inline', marginRight: 2 }} /> Preview
+                  </button>
                 </div>
               </div>
+            ))}
+          </div>
+        )}
 
-              {/* Preview hover button */}
-              <button
-                onClick={e => { e.stopPropagation(); setPreviewTemplate(t); }}
-                style={{
-                  position: 'absolute',
-                  bottom: '4.5rem',
-                  right: '0.75rem',
-                  background: 'rgba(255,255,255,0.9)',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: 6,
-                  padding: '0.3rem 0.6rem',
-                  fontSize: '0.72rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  color: '#475569',
-                  opacity: 0,
-                  transition: 'opacity 0.15s',
-                }}
-                className="ts-card-preview-btn"
-              >
-                <Eye size={12} /> Preview
-              </button>
-            </div>
-          ))}
-        </div>
+        {/* Upload Custom Template Section */}
+        <UploadTemplateSection onSelectUploadedTemplate={handleSelectUploadedTemplate} />
       </div>
 
       {/* ── Sticky bottom bar ── */}
@@ -410,17 +379,14 @@ export default function TemplateSelector() {
 
       {/* ── Preview modal ── */}
       {previewTemplate && (
-        <PreviewModal
+        <TemplatePreviewModal
           t={previewTemplate}
           onClose={() => setPreviewTemplate(null)}
           onSelect={() => handleSelect(previewTemplate)}
+          compatibilityScore={compatibilityScores[previewTemplate.id]}
+          slideCount={(previewTemplate.id.charCodeAt(0) % 7) + 6}
         />
       )}
-
-      {/* Hover-show preview button trick via CSS */}
-      <style>{`
-        .ts-card:hover .ts-card-preview-btn { opacity: 1 !important; }
-      `}</style>
     </div>
   );
 }
