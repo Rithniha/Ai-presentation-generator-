@@ -552,57 +552,9 @@ export default function CreatePresentation() {
           {/* Section 4: Extra Options */}
           <div>
             <div className="create-section-title">4. Extra Settings</div>
-            <div className="split-cols">
-              {/* Theme Selector */}
-              <div className="create-input-group">
-                <label className="create-label">Visual Palette</label>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
-                  {THEMES.map(themeItem => (
-                    <div
-                      key={themeItem.id}
-                      onClick={() => setSelectedTheme(themeItem.id)}
-                      style={{
-                        flex: 1,
-                        padding: '0.75rem',
-                        borderRadius: '10px',
-                        border: selectedTheme === themeItem.id ? '2px solid #4f46e5' : '1px solid #e2e8f0',
-                        cursor: 'pointer',
-                        background: '#ffffff',
-                        textAlign: 'center',
-                        fontSize: '0.8rem',
-                        fontWeight: 600
-                      }}
-                    >
-                      <div style={{ display: 'flex', gap: '3px', justifyContent: 'center', marginBottom: '0.25rem' }}>
-                        <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: themeItem.colors[0] }}></span>
-                        <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: themeItem.colors[1] }}></span>
-                      </div>
-                      {themeItem.label}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Tone selection */}
-              <div className="create-input-group">
-                <label className="create-label">Delivery Tone</label>
-                <select 
-                  className="create-input" 
-                  value={tone}
-                  onChange={(e) => setTone(e.target.value)}
-                  disabled={loading}
-                >
-                  <option value="Professional">Professional</option>
-                  <option value="Confident">Confident</option>
-                  <option value="Academic">Academic</option>
-                  <option value="Friendly">Friendly</option>
-                  <option value="Persuasive">Persuasive</option>
-                </select>
-              </div>
-            </div>
 
             {/* Slide Count Range Selector */}
-            <div className="create-input-group" style={{ marginTop: '1.5rem' }}>
+            <div className="create-input-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label className="create-label">Total Number of Slides</label>
                 <span className="landing-slider-count">{slideCount} Slides</span>
