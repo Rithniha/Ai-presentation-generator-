@@ -1301,9 +1301,6 @@ export default function MainEditor() {
           <button onClick={() => navigate('/')} className="adv-icon-btn"><ChevronLeft size={20} /></button>
           <div className="adv-file-menu">
             <span className="adv-doc-title">{presentation.title}</span>
-            <div className="adv-menu-links">
-              {['File','Edit','View','Insert','Format','Slide','Arrange','Tools','Help'].map(m => <span key={m}>{m}</span>)}
-            </div>
           </div>
         </div>
         <div className="adv-topbar-center">
