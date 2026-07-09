@@ -1396,23 +1396,7 @@ export default function MainEditor() {
                 <span className="ai-rec-pill">AI Active</span>
               </div>
 
-              {layoutRecommendations.length > 0 && (() => {
-                const topRec = layoutRecommendations[0];
-                return (
-                  <div className="ai-theme-recommendation-hero-card" style={{ marginBottom: '1.2rem', padding: '0.65rem' }}>
-                    <div className="ai-rec-badge-label" style={{ color: '#8b5cf6', fontSize: '0.68rem', fontWeight: 'bold' }}>
-                      ⭐ AI Recommended
-                    </div>
-                    <div className="ai-rec-hero-title-row" style={{ marginTop: '2px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h4 style={{ margin: 0, fontSize: '0.82rem', color: '#1f2937' }}>{topRec.id.charAt(0).toUpperCase() + topRec.id.slice(1)} Layout</h4>
-                      <span className="score-label" style={{ fontSize: '0.65rem' }}>{topRec.score}% Match</span>
-                    </div>
-                    <p style={{ margin: '4px 0 0 0', fontSize: '0.66rem', color: '#6b7280', lineHeight: '1.3' }}>
-                      Recommended because this layout best fits your presentation structure and content.
-                    </p>
-                  </div>
-                );
-              })()}
+
               
               <div className="adv-layout-grid">
                 {layoutRecommendations.map(rec => {
