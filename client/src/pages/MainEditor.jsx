@@ -1395,6 +1395,24 @@ export default function MainEditor() {
                 <h3>Layouts</h3>
                 <span className="ai-rec-pill">AI Active</span>
               </div>
+
+              {layoutRecommendations.length > 0 && (() => {
+                const topRec = layoutRecommendations[0];
+                return (
+                  <div className="ai-theme-recommendation-hero-card" style={{ marginBottom: '1.2rem', padding: '0.65rem' }}>
+                    <div className="ai-rec-badge-label" style={{ color: '#8b5cf6', fontSize: '0.68rem', fontWeight: 'bold' }}>
+                      ⭐ AI Recommended
+                    </div>
+                    <div className="ai-rec-hero-title-row" style={{ marginTop: '2px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.82rem', color: '#1f2937' }}>{topRec.id.charAt(0).toUpperCase() + topRec.id.slice(1)} Layout</h4>
+                      <span className="score-label" style={{ fontSize: '0.65rem' }}>{topRec.score}% Match</span>
+                    </div>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.66rem', color: '#6b7280', lineHeight: '1.3' }}>
+                      Recommended because this layout best fits your presentation structure and content.
+                    </p>
+                  </div>
+                );
+              })()}
               
               <div className="adv-layout-grid">
                 {layoutRecommendations.map(rec => {
@@ -1422,23 +1440,8 @@ export default function MainEditor() {
                       
                       <div className="layout-thumb-label-row">
                         <span className="layout-name">{l.charAt(0).toUpperCase() + l.slice(1)}</span>
-                        {isTopRec && <span className="layout-score">{rec.score}%</span>}
+                        {isTopRec && <span className="layout-score">{rec.score}% Match</span>}
                       </div>
-
-                      {isTopRec && (
-                        <div className="layout-rec-footer" onClick={e => e.stopPropagation()}>
-                          <button className="btn-why-small" onClick={() => setExplainingId(explainingId === l ? null : l)}>
-                            Why?
-                          </button>
-                          {explainingId === l && (
-                            <div className="ai-explain-tooltip">
-                              <div className="tooltip-title">★ Recommended ({rec.score}% match)</div>
-                              <div className="tooltip-desc">{rec.reason}</div>
-                              <div className="tooltip-best">Best for: {rec.bestFor}</div>
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -1697,35 +1700,7 @@ export default function MainEditor() {
                   onUpdateStyle={(changes) => {
                     selectedElements.forEach(key => handleUpdateElementStyle(key, changes));
                   }}
-                  onDuplicate={() => handleDuplicateElement(selectedElements[0])}
-                  onDelete={() => {
-                    selectedElements.forEach(key => handleDeleteElement(key));
-                    setSelectedElements([]);
-                  }}
-                  onLockToggle={() => {
-                    const key = selectedElements[0];
-                    const currentLocked = !!(activeSlide?.styles instanceof Map ? activeSlide.styles.get(key) : activeSlide?.styles?.[key])?.locked;
-                    handleUpdateElementStyle(key, { locked: !currentLocked });
-                  }}
-                  isLocked={!!(activeSlide?.styles instanceof Map ? activeSlide.styles.get(selectedElements[0]) : activeSlide?.styles?.[selectedElements[0]])?.locked}
-                  onCopyStyle={() => {
-                    const styleCopy = { ...getElementStyle(selectedElements[0]) };
-                    delete styleCopy.left;
-                    delete styleCopy.top;
-                    delete styleCopy.transform;
-                    delete styleCopy.locked;
-                    setStyleClipboard(styleCopy);
-                  }}
-                  onPasteStyle={() => {
-                    if (styleClipboard) {
-                      selectedElements.forEach(key => handleUpdateElementStyle(key, styleClipboard));
-                    }
-                  }}
-                  hasCopiedStyle={!!styleClipboard}
-                  onBringForward={() => handleUpdateElementStyle(selectedElements[0], { zIndex: 10 })}
-                  onSendBackward={() => handleUpdateElementStyle(selectedElements[0], { zIndex: 1 })}
                   onAiAction={(actionType) => handleAiTextAction(selectedElements[0], actionType)}
-                  onClose={() => setSelectedElements([])}
                   positionStyle={toolbarPosition}
                 />
               )}
