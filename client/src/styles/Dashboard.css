@@ -323,3 +323,119 @@
   color: #64748b;
   margin: 0;
 }
+
+/* Canva-like Hero Section */
+.dash-hero {
+  background: linear-gradient(100deg, #eef2ff 0%, #f5f3ff 50%, #fdf4ff 100%);
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 3rem;
+  box-shadow: inset 0 2px 10px rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.8);
+}
+
+.dash-hero-title {
+  font-size: 2.25rem;
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  color: #1e1b4b;
+  margin: 0 0 1.5rem 0;
+  background: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+}
+
+.dash-hero-search {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 0.75rem 1.5rem;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.03);
+  margin-bottom: 2.5rem;
+  transition: box-shadow 0.2s;
+}
+
+.dash-hero-search:focus-within {
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.15);
+  outline: 2px solid #4f46e5;
+}
+
+.dash-hero-search-icon {
+  color: #64748b;
+  margin-right: 0.75rem;
+}
+
+.dash-hero-search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 1rem;
+  width: 100%;
+  color: #0f172a;
+}
+
+.dash-hero-search input::placeholder {
+  color: #94a3b8;
+}
+
+.dash-quick-actions {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+}
+
+.dash-quick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.dash-quick-action:hover {
+  transform: translateY(-4px);
+}
+
+.dash-qa-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.dash-qa-icon.ai { background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%); }
+.dash-qa-icon.blank { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); }
+.dash-qa-icon.template { background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%); }
+
+.dash-quick-action span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.dash-section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.dash-loading {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+  font-weight: 500;
+}
