@@ -1,35 +1,14 @@
 import pptxgen from 'pptxgenjs';
+import { TEMPLATES } from '../data/templates';
 
-// Define theme color profiles for PowerPoint exporter
-const THEMES = {
-  classic: {
-    background: '0F172A', // Slate 900
-    cardBg: '1E293B',     // Slate 800
-    text: 'F8FAFC',       // Slate 50
-    primary: '6366F1',    // Indigo 500
-    accent: '06B6D4'      // Cyan 500
-  },
-  sunset: {
-    background: '1C1917', // Stone 900
-    cardBg: '292524',     // Stone 800
-    text: 'FAFAF9',       // Stone 50
-    primary: 'F97316',    // Orange 500
-    accent: 'EAB308'      // Yellow 500
-  },
-  forest: {
-    background: '062F21', // Dark Forest Green
-    cardBg: '094A34',     // Forest Green
-    text: 'F0FDF4',       // Green 50
-    primary: '10B981',    // Emerald 500
-    accent: '84CC16'      // Lime 500
-  },
-  cyberpunk: {
-    background: '0E0616', // Dark Purple
-    cardBg: '1D0C2E',     // Medium Purple
-    text: 'FDF8FF',       // Purple White
-    primary: 'D946EF',    // Magenta
-    accent: '06B6D4'      // Cyan
+const getCleanHex = (colorStr) => {
+  if (!colorStr) return '000000';
+  // Strip `#` and transparent alpha suffixes if they exist
+  let clean = colorStr.replace('#', '').trim();
+  if (clean.length > 6) {
+    clean = clean.substring(0, 6);
   }
+  return clean;
 };
 
 /**
@@ -37,7 +16,17 @@ const THEMES = {
  */
 export const exportToPptx = (presentation) => {
   const { title, theme = 'classic', slides = [] } = presentation;
-  const colors = THEMES[theme] || THEMES.classic;
+  
+  // Resolve theme from templates list
+  const activeTemplate = TEMPLATES.find(t => t.id === theme) || TEMPLATES.find(t => t.id === 'classic') || TEMPLATES[0];
+
+  const colors = {
+    background: getCleanHex(activeTemplate.bg),
+    cardBg: getCleanHex(activeTemplate.card || activeTemplate.secondary),
+    text: getCleanHex(activeTemplate.text),
+    primary: getCleanHex(activeTemplate.accent),
+    accent: getCleanHex(activeTemplate.accent)
+  };
 
   const pptx = new pptxgen();
   pptx.layout = 'LAYOUT_16x9';
@@ -93,46 +82,86 @@ export const exportToPptx = (presentation) => {
     } 
     
     else if (layout === 'stats') {
-      // Large statistical number layout
       const statVal = content[0] || '100';
       const label = content[1] || 'Stat Label Description';
       const sublabel = content[2] || '';
 
-      // Giant Stat number
-      slide.addText(statVal, {
-        x: 0.8,
-        y: 2.0,
-        w: 5.5,
-        h: 2.5,
-        fontSize: 90,
-        bold: true,
-        color: colors.accent,
-        fontFace: 'Outfit',
-        align: 'center'
-      });
+      // Check if it's a serialized chart slide
+      if (statVal.startsWith('CHART:')) {
+        const chartType = statVal.split(':')[1] || 'bar';
+        const chartTitle = label || 'Metrics';
+        const rawData = sublabel || '';
 
-      // Label and descriptions
-      slide.addText(label, {
-        x: 6.5,
-        y: 2.5,
-        w: 6.0,
-        h: 0.8,
-        fontSize: 24,
-        bold: true,
-        color: colors.text,
-        fontFace: 'Outfit'
-      });
+        const parsed = rawData.split(',').map(item => {
+          const [lbl, val] = item.split(':');
+          return {
+            name: lbl?.trim() || 'Label',
+            value: parseFloat(val?.trim()) || 0
+          };
+        }).filter(d => !isNaN(d.value));
 
-      if (sublabel) {
-        slide.addText(sublabel, {
-          x: 6.5,
-          y: 3.3,
-          w: 6.0,
-          h: 1.2,
-          fontSize: 16,
-          color: colors.text,
-          fontFace: 'Inter'
+        if (parsed.length > 0) {
+          const chartData = [
+            {
+              name: chartTitle,
+              labels: parsed.map(d => d.name),
+              values: parsed.map(d => d.value)
+            }
+          ];
+
+          let pptxChartType = pptx.charts.BAR;
+          if (chartType === 'line') pptxChartType = pptx.charts.LINE;
+          if (chartType === 'area') pptxChartType = pptx.charts.AREA;
+
+          slide.addChart(pptxChartType, chartData, {
+            x: 1.0,
+            y: 1.8,
+            w: 11.3,
+            h: 4.5,
+            showTitle: true,
+            title: chartTitle,
+            titleColor: colors.primary,
+            titleFontSize: 22,
+            valGridLine: { stroke: 'e2e8f0', strokeWidth: 0.5 }
+          });
+        }
+      } else {
+        // Giant Stat number
+        slide.addText(statVal, {
+          x: 0.8,
+          y: 2.0,
+          w: 5.5,
+          h: 2.5,
+          fontSize: 90,
+          bold: true,
+          color: colors.accent,
+          fontFace: 'Outfit',
+          align: 'center'
         });
+
+        // Label and descriptions
+        slide.addText(label, {
+          x: 6.5,
+          y: 2.5,
+          w: 6.0,
+          h: 0.8,
+          fontSize: 24,
+          bold: true,
+          color: colors.text,
+          fontFace: 'Outfit'
+        });
+
+        if (sublabel) {
+          slide.addText(sublabel, {
+            x: 6.5,
+            y: 3.3,
+            w: 6.0,
+            h: 1.2,
+            fontSize: 16,
+            color: colors.text,
+            fontFace: 'Inter'
+          });
+        }
       }
     } 
     

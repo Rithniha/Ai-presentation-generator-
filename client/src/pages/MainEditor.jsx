@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { getGuestSessionId } from '../services/auth';
 import { exportToPptx } from '../services/pptxExporter';
+import { TEMPLATES } from '../data/templates';
 import { 
   Sparkles, Save, Download, Layout, Palette, Plus, Trash2, 
   ChevronLeft, FileText, Columns, TrendingUp, Clock, Type, Image as ImageIcon, 
@@ -34,7 +35,7 @@ export default function MainEditor() {
     try {
       setLoading(true);
       if (id.startsWith('pres_')) {
-         // Mock created presentation
+         // Mock fallback if template generator not triggered properly
          setPresentation({
            title: 'Generated Presentation',
            theme: 'classic',
@@ -55,6 +56,18 @@ export default function MainEditor() {
     }
   };
 
+  // Dynamic Google Fonts loading for templates
+  useEffect(() => {
+    const fontNames = Array.from(new Set(TEMPLATES.map(t => t.font))).filter(Boolean);
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?${fontNames.map(f => `family=${f.replace(/ /g, '+')}:wght@300;400;500;600;700;800;900`).join('&')}&display=swap`;
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
+
   useEffect(() => {
     loadPresentation();
   }, [id]);
@@ -72,7 +85,7 @@ export default function MainEditor() {
       setTimeout(() => {
         alert('Presentation progress saved successfully.');
         setSaving(false);
-      }, 800);
+      }, 850);
     } catch (err) {
       alert(err.message || 'Saving failed.');
       setSaving(false);
@@ -136,7 +149,7 @@ export default function MainEditor() {
     setActiveSlideIdx(0);
   };
 
-  if (loading) {
+  if (loading || !presentation) {
     return (
       <div className="landing-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="spinner"></div>
@@ -146,6 +159,30 @@ export default function MainEditor() {
   }
 
   const activeSlide = presentation.slides[activeSlideIdx] || presentation.slides[0];
+  const activeTemplate = TEMPLATES.find(t => t.id === presentation.theme) || TEMPLATES.find(t => t.id === 'classic') || TEMPLATES[0];
+
+  // Helper parser for slide chart contents
+  const parseChartContent = (content) => {
+    if (!content || content.length < 3 || !content[0]?.startsWith('CHART:')) {
+      return null;
+    }
+    const type = content[0].split(':')[1] || 'bar';
+    const chartTitle = content[1] || 'Metrics';
+    const rawData = content[2] || '';
+    
+    const parsed = rawData.split(',').map(item => {
+      const [label, val] = item.split(':');
+      return {
+        label: label?.trim() || 'Label',
+        value: parseFloat(val?.trim()) || 0
+      };
+    }).filter(d => !isNaN(d.value));
+
+    const maxVal = parsed.length > 0 ? Math.max(...parsed.map(d => d.value)) : 100;
+    return { type, chartTitle, parsed, maxVal };
+  };
+
+  const chartInfo = parseChartContent(activeSlide.content);
 
   return (
     <div className="adv-editor-layout" data-theme={presentation.theme}>
@@ -188,11 +225,8 @@ export default function MainEditor() {
 
       {/* Formatting Toolbar */}
       <div className="adv-format-toolbar">
-        <select className="adv-font-select">
-          <option>Inter</option>
-          <option>Roboto</option>
-          <option>Playfair Display</option>
-          <option>Montserrat</option>
+        <select className="adv-font-select" value={activeTemplate.font} readOnly>
+          <option>{activeTemplate.font}</option>
         </select>
         <div className="adv-font-size-control">
           <button>-</button>
@@ -203,13 +237,13 @@ export default function MainEditor() {
         <button className="adv-format-btn"><Bold size={16} /></button>
         <button className="adv-format-btn"><Italic size={16} /></button>
         <button className="adv-format-btn"><Underline size={16} /></button>
-        <div className="adv-color-picker" style={{ backgroundColor: '#ffffff' }} />
+        <div className="adv-color-picker" style={{ backgroundColor: activeTemplate.accent }} />
         <div className="adv-divider" />
         <button className="adv-format-btn"><AlignLeft size={16} /></button>
         <button className="adv-format-btn"><AlignCenter size={16} /></button>
         <button className="adv-format-btn"><AlignRight size={16} /></button>
         <div className="adv-divider" />
-        <button className="adv-format-btn" title="AI Magic"><Sparkles size={16} color="#8b5cf6" /></button>
+        <button className="adv-format-btn" title="AI Magic"><Sparkles size={16} color={activeTemplate.accent} /></button>
       </div>
 
       <div className="adv-workspace">
@@ -247,10 +281,29 @@ export default function MainEditor() {
                 ))}
               </div>
               <h3 style={{ marginTop: '2rem' }}>Themes</h3>
-              <div className="adv-theme-grid">
-                {['classic', 'sunset', 'forest', 'cyberpunk'].map(t => (
-                  <div key={t} className={`adv-theme-thumb ${presentation.theme === t ? 'active' : ''}`} onClick={() => handleThemeChange(t)}>
-                    {t}
+              <div className="adv-theme-grid" style={{ gridTemplateColumns: '1fr', gap: '0.4rem', maxHeight: '320px', overflowY: 'auto', paddingRight: '4px' }}>
+                {TEMPLATES.map(t => (
+                  <div 
+                    key={t.id} 
+                    className={`adv-theme-thumb ${presentation.theme === t.id ? 'active' : ''}`} 
+                    onClick={() => handleThemeChange(t.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '8px',
+                      border: presentation.theme === t.id ? '2.5px solid #8b5cf6' : '1.5px solid #e2e8f0',
+                      background: '#ffffff',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, fontSize: '0.78rem', color: '#0f172a' }}>{t.name}</span>
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.bg, border: '1px solid rgba(0,0,0,0.1)' }}></span>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.accent }}></span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -269,7 +322,19 @@ export default function MainEditor() {
         {/* Central Canvas Area */}
         <main className="adv-canvas-area">
           <div className="adv-canvas-wrapper">
-            <div className={`slide-frame layout-${activeSlide.layout}`} onClick={() => setSelectedElement('background')}>
+            <div 
+              className={`slide-frame layout-${activeSlide.layout}`} 
+              onClick={() => setSelectedElement('background')}
+              style={{
+                fontFamily: activeTemplate.font || 'sans-serif',
+                background: activeTemplate.bg,
+                color: activeTemplate.text,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: activeSlide.layout === 'title' ? 'center' : 'flex-start',
+                transition: 'all 0.25s ease'
+              }}
+            >
               
               {activeSlide.layout !== 'title' && (
                 <h2 
@@ -278,19 +343,27 @@ export default function MainEditor() {
                   suppressContentEditableWarning={true}
                   onBlur={handleTitleBlur}
                   onClick={(e) => { e.stopPropagation(); setSelectedElement('title'); }}
+                  style={{
+                    color: activeTemplate.accent,
+                    fontFamily: activeTemplate.font,
+                    fontSize: '2.2rem',
+                    fontWeight: 800,
+                    marginBottom: '1.5rem',
+                    lineHeight: '1.2'
+                  }}
                 >
                   {activeSlide.title}
                 </h2>
               )}
 
-              <div className="slide-content-body">
+              <div className="slide-content-body" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 {activeSlide.layout === 'title' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', textAlign: 'center', margin: 'auto' }}>
                     <h2 
                       contentEditable="true"
                       suppressContentEditableWarning={true}
                       onBlur={handleTitleBlur}
-                      style={{ fontSize: '4rem', fontWeight: 800, color: 'hsl(var(--primary))' }}
+                      style={{ fontSize: '3.5rem', fontWeight: 900, color: activeTemplate.accent, fontFamily: activeTemplate.font, lineHeight: '1.2' }}
                     >
                       {activeSlide.title}
                     </h2>
@@ -298,7 +371,7 @@ export default function MainEditor() {
                       contentEditable="true"
                       suppressContentEditableWarning={true}
                       onBlur={(e) => handleBulletBlur(0, e.target.innerText)}
-                      style={{ fontSize: '1.5rem', color: 'hsl(var(--text-secondary))' }}
+                      style={{ fontSize: '1.4rem', color: activeTemplate.text, opacity: 0.75, fontFamily: activeTemplate.font }}
                     >
                       {activeSlide.content[0] || 'Subtitle'}
                     </p>
@@ -306,10 +379,10 @@ export default function MainEditor() {
                 )}
 
                 {activeSlide.layout === 'bullets' && (
-                  <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
+                  <ul style={{ listStyle: 'none', paddingLeft: 0, marginTop: '0.5rem' }}>
                     {activeSlide.content.map((bullet, bIdx) => (
-                      <li key={bIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem', fontSize: '1.5rem' }}>
-                        <span style={{ color: 'hsl(var(--primary))', marginTop: '0.2rem' }}>✦</span>
+                      <li key={bIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1.1rem', fontSize: '1.25rem', lineHeight: '1.5' }}>
+                        <span style={{ color: activeTemplate.accent, marginTop: '0.15rem', fontSize: '1.3rem' }}>✦</span>
                         <div
                           contentEditable="true"
                           suppressContentEditableWarning={true}
@@ -323,12 +396,168 @@ export default function MainEditor() {
                   </ul>
                 )}
                 
-                {/* Fallback for other layouts */}
-                {['columns', 'stats', 'timeline'].includes(activeSlide.layout) && (
-                   <div style={{ fontSize: '1.5rem', color: 'gray' }}>
-                     [ {activeSlide.layout.toUpperCase()} Layout Preview ]<br/>
-                     Editable components populate here based on data.
-                   </div>
+                {activeSlide.layout === 'stats' && (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {chartInfo ? (
+                      /* Live visual interactive SVG chart inside the slide! */
+                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                        <h4 style={{ fontSize: '1.1rem', color: activeTemplate.accent, fontWeight: 700, margin: 0 }}>{chartInfo.chartTitle}</h4>
+                        
+                        {chartInfo.type === 'bar' && (
+                          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1.5rem', height: '140px', paddingBottom: '10px', borderBottom: `2px solid ${activeTemplate.accent}40`, width: '80%', justifyContent: 'center' }}>
+                            {chartInfo.parsed.map((d, i) => {
+                              const pctHeight = (d.value / (chartInfo.maxVal || 1)) * 100;
+                              return (
+                                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '45px' }}>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: activeTemplate.accent, marginBottom: '4px' }}>{d.value}</span>
+                                  <div style={{ width: '100%', height: `${pctHeight * 1.1}px`, background: activeTemplate.accent, borderRadius: '4px 4px 0 0', opacity: 0.8 }} />
+                                  <span style={{ fontSize: '0.7rem', color: activeTemplate.text, opacity: 0.7, marginTop: '6px', whiteSpace: 'nowrap' }}>{d.label}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {chartInfo.type === 'line' && (
+                          <svg width="80%" height="130" viewBox="0 0 400 130" style={{ overflow: 'visible' }}>
+                            {(() => {
+                              const step = 400 / (chartInfo.parsed.length - 1 || 1);
+                              const pts = chartInfo.parsed.map((d, i) => ({
+                                x: i * step,
+                                y: 110 - (d.value / (chartInfo.maxVal || 1)) * 90,
+                                label: d.label,
+                                val: d.value
+                              }));
+                              const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                              return (
+                                <>
+                                  <path d={pathD} fill="none" stroke={activeTemplate.accent} strokeWidth="3" />
+                                  {pts.map((p, i) => (
+                                    <g key={i}>
+                                      <circle cx={p.x} cy={p.y} r="5" fill={activeTemplate.bg} stroke={activeTemplate.accent} strokeWidth="3" />
+                                      <text x={p.x} y={p.y - 12} textAnchor="middle" fill={activeTemplate.accent} fontSize="9.5" fontWeight="bold">{p.val}</text>
+                                      <text x={p.x} y="130" textAnchor="middle" fill={activeTemplate.text} opacity="0.7" fontSize="9">{p.label}</text>
+                                    </g>
+                                  ))}
+                                </>
+                              );
+                            })()}
+                          </svg>
+                        )}
+
+                        {chartInfo.type === 'area' && (
+                          <svg width="80%" height="130" viewBox="0 0 400 130" style={{ overflow: 'visible' }}>
+                            <defs>
+                              <linearGradient id={`area-grad-${id}`} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={activeTemplate.accent} stopOpacity="0.45" />
+                                <stop offset="100%" stopColor={activeTemplate.accent} stopOpacity="0" />
+                              </linearGradient>
+                            </defs>
+                            {(() => {
+                              const step = 400 / (chartInfo.parsed.length - 1 || 1);
+                              const pts = chartInfo.parsed.map((d, i) => ({
+                                x: i * step,
+                                y: 110 - (d.value / (chartInfo.maxVal || 1)) * 90,
+                                label: d.label,
+                                val: d.value
+                              }));
+                              const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                              const fillD = `${pathD} L ${pts[pts.length-1].x} 110 L ${pts[0].x} 110 Z`;
+                              return (
+                                <>
+                                  <path d={fillD} fill={`url(#area-grad-${id})`} />
+                                  <path d={pathD} fill="none" stroke={activeTemplate.accent} strokeWidth="3" />
+                                  {pts.map((p, i) => (
+                                    <g key={i}>
+                                      <circle cx={p.x} cy={p.y} r="5" fill={activeTemplate.bg} stroke={activeTemplate.accent} strokeWidth="3" />
+                                      <text x={p.x} y={p.y - 12} textAnchor="middle" fill={activeTemplate.accent} fontSize="9.5" fontWeight="bold">{p.val}</text>
+                                      <text x={p.x} y="130" textAnchor="middle" fill={activeTemplate.text} opacity="0.7" fontSize="9">{p.label}</text>
+                                    </g>
+                                  ))}
+                                </>
+                              );
+                            })()}
+                          </svg>
+                        )}
+                      </div>
+                    ) : (
+                      /* Standard statistics callout */
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem', width: '90%' }}>
+                        <div style={{ fontSize: '6rem', fontWeight: 900, color: activeTemplate.accent, lineHeight: '1', fontFamily: activeTemplate.font }}>
+                          {activeSlide.content[0]}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: activeTemplate.text }}>
+                            {activeSlide.content[1]}
+                          </div>
+                          {activeSlide.content[2] && (
+                            <div style={{ fontSize: '1.1rem', color: activeTemplate.text, opacity: 0.65 }}>
+                              {activeSlide.content[2]}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeSlide.layout === 'columns' && (
+                  <div style={{ display: 'flex', gap: '1.25rem', marginTop: '1rem', flex: 1, alignItems: 'center' }}>
+                    {activeSlide.content.map((colText, idx) => (
+                      <div 
+                        key={idx} 
+                        style={{ 
+                          flex: 1, 
+                          padding: '1.25rem', 
+                          borderRadius: '10px', 
+                          background: activeTemplate.card || 'rgba(255,255,255,0.06)', 
+                          border: `1px solid ${activeTemplate.accent}25`,
+                          minHeight: '160px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.75rem'
+                        }}
+                      >
+                        <div style={{ fontWeight: 800, color: activeTemplate.accent, fontSize: '1.1rem' }}>
+                          0{idx + 1}
+                        </div>
+                        <div
+                          contentEditable="true"
+                          suppressContentEditableWarning={true}
+                          onBlur={(e) => handleBulletBlur(idx, e.target.innerText)}
+                          style={{ fontSize: '1rem', lineHeight: '1.5', outline: 'none' }}
+                        >
+                          {colText}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeSlide.layout === 'timeline' && (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative' }}>
+                    {/* Connecting line */}
+                    <div style={{ position: 'absolute', top: '15px', left: '10%', right: '10%', height: '3px', background: activeTemplate.accent, opacity: 0.3 }} />
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                      {activeSlide.content.map((msText, idx) => (
+                        <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 0.5rem', position: 'relative' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: activeTemplate.bg, border: `3.5px solid ${activeTemplate.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, marginBottom: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: activeTemplate.accent }}>{idx + 1}</span>
+                          </div>
+                          
+                          <div 
+                            contentEditable="true"
+                            suppressContentEditableWarning={true}
+                            onBlur={(e) => handleBulletBlur(idx, e.target.innerText)}
+                            style={{ fontSize: '0.95rem', fontWeight: 500, outline: 'none', lineHeight: '1.4' }}
+                          >
+                            {msText}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

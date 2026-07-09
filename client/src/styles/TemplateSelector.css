@@ -3,8 +3,8 @@
   min-height: 100vh;
   background-color: #fafafc;
   background-image:
-    radial-gradient(circle at top right, rgba(99,102,241,0.05) 0%, transparent 60%),
-    radial-gradient(rgba(15,23,42,0.015) 1px, transparent 1px);
+    radial-gradient(circle at top right, rgba(99, 102, 241, 0.05) 0%, transparent 60%),
+    radial-gradient(rgba(15, 23, 42, 0.015) 1px, transparent 1px);
   background-size: 100% 100%, 20px 20px;
   font-family: 'Inter', system-ui, sans-serif;
   color: #0f172a;
@@ -18,9 +18,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.1rem 2rem;
-  background: rgba(255,255,255,0.85);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(15,23,42,0.07);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -144,7 +144,7 @@
 .ts-filter-pill:hover {
   border-color: #c7d2fe;
   color: #4f46e5;
-  background: rgba(79,70,229,0.03);
+  background: rgba(79, 70, 229, 0.03);
 }
 
 .ts-filter-pill.active {
@@ -165,21 +165,21 @@
   border-radius: 16px;
   border: 2px solid transparent;
   background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04), 0 8px 24px -8px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 8px 24px -8px rgba(0, 0, 0, 0.06);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   position: relative;
 }
 
 .ts-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06), 0 20px 40px -12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 20px 40px -12px rgba(0, 0, 0, 0.1);
 }
 
 .ts-card.selected {
   border-color: #4f46e5;
-  box-shadow: 0 0 0 4px rgba(79,70,229,0.15), 0 8px 24px rgba(79,70,229,0.15);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15), 0 8px 24px rgba(79, 70, 229, 0.15);
 }
 
 /* Thumbnail preview area */
@@ -236,7 +236,7 @@
 
 .ts-thumb-divider {
   height: 1px;
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
   margin: 0.4rem 0;
 }
 
@@ -254,7 +254,7 @@
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.4);
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.4);
 }
 
 /* Card metadata */
@@ -297,9 +297,9 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(255,255,255,0.92);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(15,23,42,0.07);
+  border-top: 1px solid rgba(15, 23, 42, 0.07);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -334,13 +334,13 @@
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(79,70,229,0.3);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
   transition: all 0.2s ease;
 }
 
 .ts-cta-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(79,70,229,0.4);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
 }
 
 .ts-cta-btn:disabled {
@@ -355,7 +355,7 @@
 .ts-preview-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15,23,42,0.6);
+  background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(4px);
   z-index: 50;
   display: flex;
@@ -365,8 +365,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .ts-preview-modal {
@@ -375,13 +380,20 @@
   width: 90%;
   max-width: 700px;
   overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
   animation: slideUp 0.2s ease;
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .ts-preview-slide {
@@ -473,23 +485,34 @@
   font-weight: 700;
   color: white;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(79,70,229,0.3);
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.3);
   transition: all 0.15s ease;
 }
 
 .ts-preview-select:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(79,70,229,0.4);
+  box-shadow: 0 5px 14px rgba(79, 70, 229, 0.4);
 }
 
 @media (max-width: 768px) {
-  .ts-steps { display: none; }
-  .ts-grid { grid-template-columns: 1fr 1fr; }
-  .ts-footer-bar { flex-direction: column; gap: 0.75rem; }
+  .ts-steps {
+    display: none;
+  }
+
+  .ts-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ts-footer-bar {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
 }
 
 @media (max-width: 480px) {
-  .ts-grid { grid-template-columns: 1fr; }
+  .ts-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Search Bar Styles */
@@ -653,7 +676,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Compatibility tag styles */
@@ -695,18 +720,18 @@
   overflow: hidden;
   border: 2px solid transparent;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
 }
 
 .ts-recent-card:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
 .ts-recent-card.selected {
   border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 
 .ts-recent-preview {
@@ -744,6 +769,7 @@
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -755,6 +781,7 @@
     opacity: 0;
     transform: scale(0.85);
   }
+
   to {
     opacity: 0.9;
     transform: scale(1);
@@ -770,6 +797,7 @@
     opacity: 0;
     transform: scale(0.8);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -785,6 +813,7 @@
     opacity: 0;
     transform: scale(0.96) translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -795,9 +824,7 @@
   animation: scaleUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
 }
 
-.ts-upload-section > div,
+.ts-upload-section>div,
 .ts-analysis-panel {
   animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-
-

@@ -4,6 +4,7 @@ import { Presentation, CheckCircle, ArrowRight, Eye, X, Search, Heart } from 'lu
 import { useTemplateFilters } from '../hooks/useTemplateFilters';
 import TemplatePreviewModal from '../components/TemplatePreviewModal';
 import UploadTemplateSection from '../components/UploadTemplateSection';
+import TemplateCardPreview from '../components/TemplateCardPreview';
 import { TEMPLATES } from '../data/templates';
 import '../styles/TemplateSelector.css';
 
@@ -21,77 +22,69 @@ function ThumbPreview({ t, isAiRecommended, isSelected, isFavorited, onToggleFav
   };
 
   return (
-    <div className="ts-thumb" style={{ background: t.bg }}>
-      {/* Decorative accent strip */}
-      <div style={{ position: 'absolute', left: 0, top: 0, width: 4, bottom: 0, background: t.accent, opacity: 0.9 }} />
+    <div className="ts-thumb" style={{ background: t.bg, padding: 0 }}>
 
-      {/* Heart Favorite Button */}
+      {/* ── Full-bleed SVG presentation cover preview ── */}
+      <TemplateCardPreview t={t} />
+
+      {/* ── Subtle bottom gradient so badges stay readable ── */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 48,
+        background: 'linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 100%)',
+        pointerEvents: 'none', zIndex: 1,
+      }} />
+
+      {/* ── Heart Favorite Button ── */}
       <button
         className={`ts-favorite-btn ${isFavorited ? 'favorited' : ''}`}
         onClick={handleFavoriteClick}
         style={{
           position: 'absolute',
-          top: '0.75rem',
-          right: isSelected ? '2.75rem' : '0.75rem',
+          top: '0.6rem',
+          right: isSelected ? '2.6rem' : '0.6rem',
           width: '28px',
           height: '28px',
           borderRadius: '50%',
-          background: t.card,
-          border: `1px solid ${t.accent}40`,
+          background: 'rgba(255,255,255,0.92)',
+          border: '1px solid rgba(255,255,255,0.4)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          color: isFavorited ? '#ef4444' : t.text,
+          color: isFavorited ? '#ef4444' : '#374151',
           zIndex: 10,
           padding: 0,
           outline: 'none',
+          backdropFilter: 'blur(4px)',
         }}
-        aria-label={isFavorited ? "Remove from Favorites" : "Add to Favorites"}
+        aria-label={isFavorited ? 'Remove from Favorites' : 'Add to Favorites'}
       >
-        <Heart size={15} fill={isFavorited ? '#ef4444' : 'none'} stroke={isFavorited ? '#ef4444' : 'currentColor'} />
+        <Heart size={14} fill={isFavorited ? '#ef4444' : 'none'} stroke={isFavorited ? '#ef4444' : 'currentColor'} />
       </button>
 
+      {/* ── AI Recommended badge ── */}
       {isAiRecommended && (
         <div style={{
           position: 'absolute',
-          top: '0.75rem',
-          right: isSelected ? '5.0rem' : '3.0rem',
-          fontSize: '0.65rem',
+          top: '0.6rem',
+          right: isSelected ? '4.85rem' : '2.85rem',
+          fontSize: '0.62rem',
           fontWeight: 700,
-          color: t.text,
-          opacity: 0.9,
-          background: t.card,
-          border: `1px solid ${t.accent}40`,
-          padding: '0.15rem 0.5rem',
+          color: '#1e293b',
+          background: 'rgba(255,255,255,0.92)',
+          border: '1px solid rgba(255,255,255,0.4)',
+          padding: '0.15rem 0.45rem',
           borderRadius: '999px',
           display: 'flex',
           alignItems: 'center',
           gap: '3px',
           zIndex: 5,
+          backdropFilter: 'blur(4px)',
+          whiteSpace: 'nowrap',
         }} className="ts-ai-badge">
-          <span>🤖 AI Recommended</span>
+          <span>🤖 AI Pick</span>
         </div>
       )}
-
-      <div className="ts-thumb-title" style={{ color: t.text }}>{t.name}</div>
-      <div className="ts-thumb-sub" style={{ color: t.text }}>AI Presentation</div>
-
-      <div className="ts-thumb-divider" />
-
-      {/* Simulated content rows */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, justifyContent: 'center' }}>
-        {[85, 65, 45, 30].map((w, i) => (
-          <div key={i} style={{ height: 5, width: `${w}%`, background: t.accent, borderRadius: 2, opacity: 0.4 + i * 0.1 }} />
-        ))}
-      </div>
-
-      {/* Mini bar chart simulation */}
-      <div className="ts-thumb-bars">
-        {[40, 60, 80, 50, 70, 55, 90].map((h, i) => (
-          <div key={i} className="ts-thumb-bar" style={{ height: h * 0.4, background: t.accent }} />
-        ))}
-      </div>
     </div>
   );
 }
