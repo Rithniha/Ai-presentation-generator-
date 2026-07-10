@@ -5,10 +5,10 @@ import { getGuestSessionId } from '../services/auth';
 import { exportToPptx } from '../services/pptxExporter';
 import {
   Sparkles, Download, Layout, Plus, Trash2,
-  ChevronLeft, Type, Image as ImageIcon, Shapes, Grid,
+  ChevronLeft, ImageIcon, Grid,
   AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline,
   Undo, Redo, Play, Check, Save, RefreshCw, Star, AlertCircle,
-  Lock, Unlock, BarChart3, LayoutGrid, Package, Sigma, Network, Table
+  Lock, Unlock, LayoutGrid, Package, Network, BarChart3
 } from 'lucide-react';
 import {
   analyzeContent,
@@ -20,12 +20,17 @@ import '../styles/Editor.css';
 import AIImagePanel from '../components/AIImagePanel';
 import ContextualToolbar from '../components/ContextualToolbar';
 import EditorPanels from '../components/EditorPanels';
+import AIReviewAgent from '../components/AIReviewAgent';
 import {
   fetchAllSlideImages,
-  fetchSlideImages,
   markImageUsed,
   clearUsedImages,
 } from '../services/imageSearch';
+import { 
+  findAvailableSpace, 
+  resolveCollisions, 
+  getZIndexForType 
+} from '../utils/autoLayout';
 
 /* ════════════════════════════════════════════════
    8 PROFESSIONAL THEME DEFINITIONS
@@ -320,8 +325,40 @@ export default function MainEditor() {
   // ── Contextual Text Toolbar & Multi-Selection States ──
   const [selectedElements, setSelectedElements] = useState([]);
   const [styleClipboard, setStyleClipboard] = useState(null);
-  const [toolbarPosition, setToolbarPosition] = useState(null);
   const [activePanel, setActivePanel] = useState(null);
+  const [toolbarPosition, setToolbarPosition] = useState(null);
+  const [editingTextId, setEditingTextId] = useState(null);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setEditingTextId(null);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (editingTextId) {
+      const el = document.querySelector(`[data-el-key="${editingTextId}"]`);
+      if (el) {
+        el.focus();
+        try {
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(el);
+          range.collapse(false);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } catch (err) {
+          console.error("Focus error", err);
+        }
+      }
+    }
+  }, [editingTextId]);
+
+  const isEditable = (key) => editingTextId === key;
 
   // ── Image state ──
   const [slideImages, setSlideImages] = useState(new Map());
@@ -620,6 +657,23 @@ export default function MainEditor() {
     const handleMouseUp = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      
+      // Resolve collisions after drop
+      setPresentation(prev => {
+        if (!prev) return prev;
+        const s = prev.slides[activeSlideIdx];
+        if (!s) return prev;
+        
+        // Merge title/subtitle back to standard structure to allow generic resolution or just resolve standard elements
+        // For simplicity, we only resolve collisions for standard elements that share the 'elements' array
+        if (!key.startsWith('el_')) return prev;
+
+        const updatedElements = resolveCollisions(s.elements || [], key, 20);
+        return {
+          ...prev,
+          slides: prev.slides.map((slide, i) => i === activeSlideIdx ? { ...slide, elements: updatedElements } : slide)
+        };
+      });
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -676,6 +730,21 @@ export default function MainEditor() {
     const handleMouseUp = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      
+      // Resolve collisions after resize
+      setPresentation(prev => {
+        if (!prev) return prev;
+        const s = prev.slides[activeSlideIdx];
+        if (!s) return prev;
+        
+        if (!key.startsWith('el_')) return prev;
+
+        const updatedElements = resolveCollisions(s.elements || [], key, 20);
+        return {
+          ...prev,
+          slides: prev.slides.map((slide, i) => i === activeSlideIdx ? { ...slide, elements: updatedElements } : slide)
+        };
+      });
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -890,28 +959,40 @@ export default function MainEditor() {
   }, [selectedElements, presentation, activeSlideIdx]);
 
   const handleInsertElement = (type, content, defaultStyle = {}) => {
-    const newEl = {
-      id: `el_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-      type,
-      content,
-      style: {
-        position: 'absolute',
-        left: '150px',
-        top: '150px',
-        width: type === 'text' ? '300px' : type === 'table' ? '400px' : '360px',
-        height: type === 'text' ? 'auto' : type === 'table' ? '200px' : '220px',
-        transform: 'rotate(0deg)',
-        zIndex: 5,
-        ...defaultStyle
-      },
-      locked: false
-    };
     setPresentation(prev => {
       if (!prev) return prev;
       const updatedSlides = prev.slides.map((s, idx) => {
         if (idx !== activeSlideIdx) return s;
-        const elements = [...(s.elements || []), newEl];
-        return { ...s, elements };
+        
+        const existingElements = s.elements || [];
+        
+        // Define default dimensions based on type
+        const width = type === 'text' ? '300px' : type === 'table' ? '400px' : '360px';
+        const height = type === 'text' ? 'auto' : type === 'table' ? '200px' : '220px';
+        
+        const tempNewEl = { type, style: { width, height } };
+        
+        // Auto Layout engine calculates the first available empty slot
+        const { left, top } = findAvailableSpace(tempNewEl, existingElements, { width: 800, height: 450 });
+        
+        const newEl = {
+          id: `el_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+          type,
+          content,
+          style: {
+            position: 'absolute',
+            left,
+            top,
+            width,
+            height,
+            transform: 'rotate(0deg)',
+            zIndex: getZIndexForType(type),
+            ...defaultStyle
+          },
+          locked: false
+        };
+        
+        return { ...s, elements: [...existingElements, newEl] };
       });
       return { ...prev, slides: updatedSlides };
     });
@@ -972,6 +1053,20 @@ export default function MainEditor() {
       });
       return { ...prev, slides: updatedSlides };
     });
+    
+    // Resolve collisions after React commits the new text and the DOM expands
+    setTimeout(() => {
+      setPresentation(prev => {
+        if (!prev) return prev;
+        const s = prev.slides[activeSlideIdx];
+        if (!s) return prev;
+        const updatedElements = resolveCollisions(s.elements || [], elId, 20);
+        return {
+          ...prev,
+          slides: prev.slides.map((slide, i) => i === activeSlideIdx ? { ...slide, elements: updatedElements } : slide)
+        };
+      });
+    }, 50);
   };
 
   const handleTableCellChange = (elId, rowIdx, colIdx, text) => {
@@ -1266,9 +1361,16 @@ export default function MainEditor() {
         <div
           key={el.id}
           data-el-key={el.id}
-          contentEditable
+          contentEditable={isEditable(el.id)}
           suppressContentEditableWarning
-          onBlur={e => handleElementTextChange(el.id, e.target.innerText)}
+          onBlur={e => { handleElementTextChange(el.id, e.target.innerText); setEditingTextId(null); }}
+          onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId(el.id); }}
+          onKeyDown={e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+              e.preventDefault();
+              setEditingTextId(null);
+            }
+          }}
           onClick={e => handleElementClick(el.id, e)}
           style={getElementStyle(el.id, {
             position: 'absolute',
@@ -1533,9 +1635,16 @@ export default function MainEditor() {
             </span>
             <div
               data-el-key={key}
-              contentEditable
+              contentEditable={isEditable(key)}
               suppressContentEditableWarning
-              onBlur={e => handleBulletBlur(bIdx, e.target.innerText)}
+              onBlur={e => { handleBulletBlur(bIdx, e.target.innerText); setEditingTextId(null); }}
+              onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId(key); }}
+              onKeyDown={e => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                  e.preventDefault();
+                  setEditingTextId(null);
+                }
+              }}
               onClick={e => handleElementClick(key, e)}
               style={getElementStyle(key, { flex: 1, outline: 'none' })}
             >
@@ -1562,9 +1671,16 @@ export default function MainEditor() {
           <div
             data-el-key="title"
             className={`slide-main-title ${selectedElements.includes('title') ? 'selected' : ''}`}
-            contentEditable
+            contentEditable={isEditable('title')}
             suppressContentEditableWarning
-            onBlur={handleTitleBlur}
+            onBlur={e => { handleTitleBlur(e); setEditingTextId(null); }}
+            onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId('title'); }}
+            onKeyDown={e => {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                setEditingTextId(null);
+              }
+            }}
             onClick={e => handleElementClick('title', e)}
             style={getElementStyle('title', {
               fontFamily: 'var(--slide-title-font)',
@@ -1579,9 +1695,16 @@ export default function MainEditor() {
           <div
             data-el-key="subtitle"
             className="slide-main-subtitle"
-            contentEditable
+            contentEditable={isEditable('subtitle')}
             suppressContentEditableWarning
-            onBlur={e => handleBulletBlur(0, e.target.innerText)}
+            onBlur={e => { handleBulletBlur(0, e.target.innerText); setEditingTextId(null); }}
+            onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId('subtitle'); }}
+            onKeyDown={e => {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                setEditingTextId(null);
+              }
+            }}
             onClick={e => handleElementClick('subtitle', e)}
             style={getElementStyle('subtitle', {
               fontFamily: 'var(--slide-body-font)',
@@ -1609,9 +1732,16 @@ export default function MainEditor() {
             <h2
               data-el-key="title"
               className={`slide-heading ${selectedElements.includes('title') ? 'selected' : ''}`}
-              contentEditable
+              contentEditable={isEditable('title')}
               suppressContentEditableWarning
-              onBlur={handleTitleBlur}
+              onBlur={e => { handleTitleBlur(e); setEditingTextId(null); }}
+              onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId('title'); }}
+              onKeyDown={e => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                  e.preventDefault();
+                  setEditingTextId(null);
+                }
+              }}
               onClick={e => handleElementClick('title', e)}
               style={getElementStyle('title', { fontFamily: 'var(--slide-title-font)', color: 'var(--slide-title-color)' })}
             >
@@ -1649,9 +1779,16 @@ export default function MainEditor() {
           <h2
             data-el-key="title"
             className="slide-heading"
-            contentEditable
+            contentEditable={isEditable('title')}
             suppressContentEditableWarning
-            onBlur={handleTitleBlur}
+            onBlur={e => { handleTitleBlur(e); setEditingTextId(null); }}
+            onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId('title'); }}
+            onKeyDown={e => {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                setEditingTextId(null);
+              }
+            }}
             onClick={e => handleElementClick('title', e)}
             style={getElementStyle('title', { fontFamily: 'var(--slide-title-font)', color: 'var(--slide-title-color)' })}
           >
@@ -1673,9 +1810,16 @@ export default function MainEditor() {
                   </div>
                   <div
                     data-el-key={key}
-                    contentEditable
+                    contentEditable={isEditable(key)}
                     suppressContentEditableWarning
-                    onBlur={e => handleBulletBlur(i, e.target.innerText)}
+                    onBlur={e => { handleBulletBlur(i, e.target.innerText); setEditingTextId(null); }}
+                    onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId(key); }}
+                    onKeyDown={e => {
+                      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        setEditingTextId(null);
+                      }
+                    }}
                     onClick={e => handleElementClick(key, e)}
                     style={getElementStyle(key, { fontFamily: 'var(--slide-body-font)', color: 'var(--slide-text)', outline: 'none', fontSize: '0.95rem' })}
                   >
@@ -1693,9 +1837,16 @@ export default function MainEditor() {
           <h2
             data-el-key="title"
             className="slide-heading"
-            contentEditable
+            contentEditable={isEditable('title')}
             suppressContentEditableWarning
-            onBlur={handleTitleBlur}
+            onBlur={e => { handleTitleBlur(e); setEditingTextId(null); }}
+            onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId('title'); }}
+            onKeyDown={e => {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                setEditingTextId(null);
+              }
+            }}
             onClick={e => handleElementClick('title', e)}
             style={getElementStyle('title', { fontFamily: 'var(--slide-title-font)', color: 'var(--slide-title-color)' })}
           >
@@ -1716,9 +1867,16 @@ export default function MainEditor() {
                   <div
                     className="slide-stat-value"
                     data-el-key={valKey}
-                    contentEditable
+                    contentEditable={isEditable(valKey)}
                     suppressContentEditableWarning
-                    onBlur={e => handleBulletBlur(i, e.target.innerText)}
+                    onBlur={e => { handleBulletBlur(i, e.target.innerText); setEditingTextId(null); }}
+                    onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId(valKey); }}
+                    onKeyDown={e => {
+                      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        setEditingTextId(null);
+                      }
+                    }}
                     onClick={e => handleElementClick(valKey, e)}
                     style={getElementStyle(valKey, { color: 'var(--slide-accent)', fontFamily: 'var(--slide-title-font)', outline: 'none' })}
                   >
@@ -1727,8 +1885,16 @@ export default function MainEditor() {
                   <div 
                     className="slide-stat-label" 
                     data-el-key={lblKey}
-                    contentEditable
+                    contentEditable={isEditable(lblKey)}
                     suppressContentEditableWarning
+                    onBlur={e => setEditingTextId(null)}
+                    onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId(lblKey); }}
+                    onKeyDown={e => {
+                      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        setEditingTextId(null);
+                      }
+                    }}
                     onClick={e => handleElementClick(lblKey, e)}
                     style={getElementStyle(lblKey, { color: 'var(--slide-text-secondary)', fontFamily: 'var(--slide-body-font)', outline: 'none' })}
                   >
@@ -1746,9 +1912,16 @@ export default function MainEditor() {
           <h2
             data-el-key="title"
             className="slide-heading"
-            contentEditable
+            contentEditable={isEditable('title')}
             suppressContentEditableWarning
-            onBlur={handleTitleBlur}
+            onBlur={e => { handleTitleBlur(e); setEditingTextId(null); }}
+            onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId('title'); }}
+            onKeyDown={e => {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                setEditingTextId(null);
+              }
+            }}
             onClick={e => handleElementClick('title', e)}
             style={getElementStyle('title', { fontFamily: 'var(--slide-title-font)', color: 'var(--slide-title-color)' })}
           >
@@ -1768,9 +1941,16 @@ export default function MainEditor() {
                   <div
                     className="slide-tl-card"
                     data-el-key={key}
-                    contentEditable
+                    contentEditable={isEditable(key)}
                     suppressContentEditableWarning
-                    onBlur={e => handleBulletBlur(i, e.target.innerText)}
+                    onBlur={e => { handleBulletBlur(i, e.target.innerText); setEditingTextId(null); }}
+                    onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId(key); }}
+                    onKeyDown={e => {
+                      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        setEditingTextId(null);
+                      }
+                    }}
                     onClick={e => handleElementClick(key, e)}
                     style={getElementStyle(key, { background: 'var(--slide-card-bg)', border: '1px solid var(--slide-border)', color: 'var(--slide-text)', fontFamily: 'var(--slide-body-font)', outline: 'none' })}
                   >
@@ -1866,17 +2046,22 @@ export default function MainEditor() {
         <nav className="adv-side-nav">
           {/* Section: Design/Main Tab Buttons */}
           {[
-            { id: 'templates', icon: Layout,    label: 'Design'  },
-            { id: 'uploads',   icon: ImageIcon, label: 'Images'  },
-            { id: 'shapes',    icon: Shapes,    label: 'Shapes'  },
-            { id: 'apps',      icon: Grid,      label: 'Apps'    },
+            { id: 'templates', icon: Layout,    label: 'Design', isDrawer: true },
+            { id: 'uploads',   icon: ImageIcon, label: 'Images', isDrawer: true },
+            { id: 'charts',    icon: BarChart3, label: 'Charts', panelId: 'chart' },
+            { id: 'apps',      icon: Grid,      label: 'Apps',   panelId: 'apps' },
           ].map(tab => (
             <button
               key={tab.id}
-              className={`adv-nav-item ${activeSidebarTab === tab.id ? 'active' : ''}`}
+              className={`adv-nav-item ${(tab.isDrawer ? activeSidebarTab === tab.id : activePanel === tab.panelId) ? 'active' : ''}`}
               onClick={() => {
-                setActiveSidebarTab(prev => prev === tab.id ? null : tab.id);
-                setActivePanel(null);
+                if (tab.isDrawer) {
+                  setActiveSidebarTab(prev => prev === tab.id ? null : tab.id);
+                  setActivePanel(null);
+                } else {
+                  setActivePanel(prev => prev === tab.panelId ? null : tab.panelId);
+                  setActiveSidebarTab(null);
+                }
               }}
             >
               <tab.icon size={20} />
@@ -1887,34 +2072,10 @@ export default function MainEditor() {
           {/* Section Divider */}
           <div style={{ width: '70%', height: '1px', background: 'rgba(255,255,255,0.12)', margin: '8px 0' }} />
 
-          {/* Group: Content */}
-          <div style={{ fontSize: '0.58rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', alignSelf: 'center', margin: '4px 0 2px' }}>Content</div>
-          {[
-            { id: 'text', icon: Type, label: 'Text' },
-            { id: 'table', icon: Table, label: 'Table' },
-            { id: 'chart', icon: BarChart3, label: 'Chart' },
-          ].map(tool => (
-            <button
-              key={tool.id}
-              className={`adv-nav-item ${activePanel === tool.id ? 'active' : ''}`}
-              onClick={() => {
-                setActivePanel(prev => prev === tool.id ? null : tool.id);
-                setActiveSidebarTab(null);
-              }}
-            >
-              <tool.icon size={20} />
-              <span>{tool.label}</span>
-            </button>
-          ))}
-
-          {/* Section Divider */}
-          <div style={{ width: '70%', height: '1px', background: 'rgba(255,255,255,0.12)', margin: '8px 0' }} />
-
           {/* Group: Layout */}
           <div style={{ fontSize: '0.58rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', alignSelf: 'center', margin: '4px 0 2px' }}>Layout</div>
           {[
             { id: 'autolayout', icon: LayoutGrid, label: 'Auto Layout' },
-            { id: 'formula', icon: Sigma, label: 'Formula' },
             { id: 'mindmap', icon: Network, label: 'Mind Map' },
           ].map(tool => (
             <button
@@ -2189,7 +2350,7 @@ export default function MainEditor() {
               </div>
 
               {/* FLOATING SELECTION OVERLAYS */}
-              {!isCompareMode && selectedElements.map(key => {
+              {!isCompareMode && selectedElements.filter(key => key !== editingTextId).map(key => {
                 const el = document.querySelector(`[data-el-key="${key}"]`);
                 if (!el) return null;
                 const container = document.querySelector('.slide-frame');
@@ -2210,6 +2371,7 @@ export default function MainEditor() {
                   <div 
                     key={key}
                     className={`adv-selection-box ${isLocked ? 'locked' : ''}`}
+                    onDoubleClick={(e) => { e.stopPropagation(); setEditingTextId(key); }}
                     style={{
                       position: 'absolute',
                       top: top - 2,
@@ -2323,20 +2485,15 @@ export default function MainEditor() {
                 Click any element on the canvas to edit its properties.
               </div>
             )}
-            <div className="adv-notes-section">
-              <label>Speaker Notes</label>
-              <textarea
-                className="adv-notes-input"
-                placeholder="Add speaker notes here..."
-                value={activeSlide ? (activeSlide.note || '') : ''}
-                onChange={e => {
-                  setPresentation(prev => ({
-                    ...prev,
-                    slides: prev.slides.map((s, i) =>
-                      i === activeSlideIdx ? { ...s, note: e.target.value } : s
-                    )
-                  }));
-                }}
+            <div className="adv-notes-section" style={{ borderTop: '1px solid #e2e8f0', marginTop: '16px', paddingTop: '16px' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                🤖 AI Review Agent
+              </div>
+              <AIReviewAgent 
+                presentation={presentation}
+                setPresentation={setPresentation}
+                activeSlide={activeSlide}
+                activeSlideIdx={activeSlideIdx}
               />
             </div>
           </div>

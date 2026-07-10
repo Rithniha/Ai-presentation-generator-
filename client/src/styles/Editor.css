@@ -1624,7 +1624,7 @@
 }
 
 .hover-card-border {
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: all 0.2s ease;
 }
 
 .hover-card-border:hover {
@@ -1651,4 +1651,142 @@
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
+/* ── TEXT PANEL MODAL ── */
+.text-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.text-modal-container {
+  width: min(1000px, 90vw);
+  height: min(700px, 85vh);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04), 0 0 0 1px rgba(139,92,246,0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.preset-card:hover {
+  border-color: #7c3aed !important;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1) !important;
+}
+
+/* ── AUTO LAYOUT ENGINE ── */
+[data-el-key] {
+  transition: top 0.25s cubic-bezier(0.2, 0, 0, 1), left 0.25s cubic-bezier(0.2, 0, 0, 1);
+  word-wrap: break-word; /* Ensure text wraps instead of overflowing */
+}
+
+/* ── MODAL SHELL SYSTEM ── */
+.modal-shell-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.45); z-index: 1000;
+  display: flex; justify-content: center; align-items: center;
+  animation: fadeIn 0.2s ease-out;
+}
+.modal-shell-container {
+  width: min(1000px, 90vw); height: min(700px, 85vh);
+  background: #ffffff; border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04), 0 0 0 1px rgba(139,92,246,0.15);
+  display: flex; flex-direction: column; overflow: hidden;
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); box-sizing: border-box;
+}
+.modal-shell-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 24px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;
+  height: 56px; box-sizing: border-box; flex-shrink: 0;
+}
+.modal-shell-title {
+  font-weight: 600; font-size: 1rem; color: #1e293b;
+}
+.modal-shell-close {
+  background: transparent; border: none; cursor: pointer; padding: 4px;
+  border-radius: 50%; display: flex; align-items: center; color: #64748b; transition: background 0.15s;
+}
+.modal-shell-close:hover { background: #e2e8f0; }
+.modal-shell-body {
+  flex: 1; display: flex; overflow: hidden;
+}
+.modal-shell-sidebar {
+  width: 160px; border-right: 1px solid #e2e8f0; background: #f8fafc;
+  display: flex; flex-direction: column; padding: 12px 8px; overflow-y: auto; flex-shrink: 0;
+}
+.modal-sidebar-tab {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px;
+  background: transparent; border: none; border-radius: 8px; text-align: left;
+  font-size: 0.85rem; font-weight: 500; color: #475569; cursor: pointer; transition: all 0.15s; margin-bottom: 4px;
+}
+.modal-sidebar-tab:hover { background: #f1f5f9; color: #1e293b; }
+.modal-sidebar-tab.active { background: #f3e8ff; color: #7c3aed; font-weight: 600; }
+.modal-sidebar-tab .tab-icon { display: flex; align-items: center; }
+.modal-shell-content {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding: 24px; background: #ffffff;
+}
+
+/* ── AI REVIEW AGENT ── */
+.ai-agent-panel {
+  display: flex; flex-direction: column; gap: 14px; padding: 16px; background: #ffffff; border-radius: 12px;
+}
+.ai-agent-score-card {
+  display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;
+  background: linear-gradient(135deg, #faf5ff, #f3e8ff); border: 1px solid #d8b4fe; border-radius: 10px;
+}
+.ai-score-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: #7c3aed; font-weight: 600; }
+.ai-score-value { font-size: 1.5rem; font-weight: 800; color: #5b21b6; }
+.ai-agent-subtitle { font-size: 0.78rem; color: #64748b; margin: 0; line-height: 1.4; }
+.ai-agent-chat-container {
+  height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px;
+  display: flex; flex-direction: column; gap: 10px; background: #f8fafc;
+}
+.ai-chat-bubble {
+  max-width: 85%; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; line-height: 1.4;
+}
+.ai-chat-bubble.ai { background: #ffffff; border: 1px solid #e2e8f0; align-self: flex-start; }
+.ai-chat-bubble.user { background: #f3e8ff; border: 1px solid #d8b4fe; align-self: flex-end; }
+.ai-chat-bubble.loading { opacity: 0.7; }
+.ai-agent-chips-container {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.ai-prompt-chip {
+  font-size: 0.72rem; padding: 6px 10px; border-radius: 20px; border: 1px solid #d8b4fe;
+  background: #ffffff; color: #7c3aed; cursor: pointer; transition: all 0.15s; font-weight: 500;
+}
+.ai-prompt-chip:hover { background: #faf5ff; box-shadow: 0 2px 4px rgba(124,58,237,0.08); }
+.ai-agent-suggestions-card {
+  padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+}
+.ai-agent-input-row {
+  display: flex; gap: 8px;
+}
+.ai-agent-input-row input {
+  flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.8rem; outline: none;
+}
+.ai-agent-input-row input:focus { border-color: #a855f7; }
+.ai-btn-purple {
+  background: #7c3aed; border: none; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s;
+}
+.ai-btn-purple:hover { background: #6d28d9; }
+.ai-agent-actions-row {
+  display: flex; gap: 8px;
+}
+.ai-btn-secondary {
+  flex: 1; padding: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-size: 0.78rem; font-weight: 600; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.15s;
+}
+.ai-btn-secondary:hover { background: #f8fafc; }
+.ai-btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
 

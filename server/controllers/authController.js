@@ -120,3 +120,44 @@ exports.getMe = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Google OAuth Login/Signup
+// @route   POST /api/auth/google
+// @access  Public
+exports.googleLogin = async (req, res, next) => {
+  try {
+    const { token } = req.body;
+    
+    // Fetch user info from Google using the access token
+    const googleRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    const payload = await googleRes.json();
+    
+    if (!googleRes.ok || !payload.email) {
+      return res.status(401).json({ success: false, error: 'Invalid Google token' });
+    }
+
+    const { email, name } = payload;
+
+    // Check if user exists
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create a new user with a random secure password
+      const crypto = require('crypto');
+      const randomPassword = crypto.randomBytes(20).toString('hex');
+      
+      user = await User.create({
+        name,
+        email,
+        password: randomPassword
+      });
+    }
+
+    sendTokenResponse(user, 200, res);
+  } catch (error) {
+    next(error);
+  }
+};

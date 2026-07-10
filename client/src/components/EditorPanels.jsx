@@ -1,32 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-  X, Type, Grid, BarChart3, Image as ImageIcon, Video, Shapes, Sigma, LayoutGrid, Package, Play, Search,
+  X, Image as ImageIcon, Video, Shapes, LayoutGrid, Package, Play, Search,
   Plus, Minus, ArrowRight, CornerRightDown, HelpCircle, Heart, Clock, Star, HelpCircle as HelpIcon
 } from 'lucide-react';
-
-// KaTeX Dynamic Loader Utility
-const useKaTeX = () => {
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    if (window.katex) {
-      setLoaded(true);
-      return;
-    }
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css';
-    document.head.appendChild(link);
-
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js';
-    script.async = true;
-    script.onload = () => setLoaded(true);
-    document.body.appendChild(script);
-  }, []);
-
-  return loaded;
-};
+import ModalShell from './modals/ModalShell';
+import ChartModal from './modals/ChartModal';
+import AppsModal from './modals/AppsModal';
 
 export default function EditorPanels({
   activePanel,
@@ -38,7 +17,6 @@ export default function EditorPanels({
   activeSlide = null,
   onApplyAutoLayout // callback for alignment operations
 }) {
-  const isKaTeXLoaded = useKaTeX();
 
   useEffect(() => {
     if (activePanel !== 'asset') return;
@@ -65,290 +43,32 @@ export default function EditorPanels({
 
   if (activePanel === 'asset') {
     return (
-      <div 
-        className="asset-modal-overlay"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(15, 23, 42, 0.45)', // 45% dark backdrop
-          zIndex: 1000,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          animation: 'fadeIn 0.2s ease-out'
-        }}
-        onClick={onClose}
-      >
-        <div
-          className="asset-modal-container"
-          style={{
-            width: '800px',
-            height: '550px',
-            maxWidth: '90vw',
-            maxHeight: '85vh',
-            background: '#ffffff',
-            borderRadius: '12px',
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04), 0 0 0 1px rgba(139,92,246,0.15)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            animation: 'scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-            boxSizing: 'border-box'
-          }}
-          onClick={e => e.stopPropagation()}
-        >
-          {/* Modal Header */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '16px 24px',
-            borderBottom: '1px solid #e2e8f0',
-            background: '#f8fafc',
-            height: '56px',
-            boxSizing: 'border-box'
-          }}>
-            <span style={{ fontWeight: 600, fontSize: '1rem', color: '#1e293b' }}>Asset Controls</span>
-            <button 
-              onClick={onClose}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                color: '#64748b'
-              }}
-              className="hover-bg-gray"
-            >
-              <X size={18} />
-            </button>
-          </div>
-          {/* Modal Body */}
-          <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-            <AssetPanel onInsert={onInsert} />
-          </div>
-        </div>
-      </div>
+      <ModalShell title="Asset Controls" onClose={onClose}>
+        <AssetPanel onInsert={onInsert} />
+      </ModalShell>
     );
   }
 
-  return (
-    <div 
-      className="adv-sliding-panel-container glass-panel"
-      style={{
-        position: 'absolute',
-        top: '64px',
-        left: 0,
-        right: 0,
-        height: '390px',
-        zIndex: 500,
-        background: 'rgba(255, 255, 255, 0.98)',
-        borderBottom: '1px solid rgba(139, 92, 246, 0.25)',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-        display: 'flex',
-        flexDirection: 'column',
-        animation: 'slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-        overflow: 'hidden',
-        boxSizing: 'border-box'
-      }}
-      onClick={e => e.stopPropagation()}
-    >
-      {/* Panel Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '10px 24px',
-        borderBottom: '1px solid #e2e8f0',
-        background: '#f8fafc',
-        height: '46px',
-        boxSizing: 'border-box'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b', textTransform: 'capitalize' }}>
-            {activePanel === 'autolayout' ? 'Auto Layout' : activePanel} Controls
-          </span>
-        </div>
-        <button 
-          onClick={onClose}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '4px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            color: '#64748b'
-          }}
-          className="hover-bg-gray"
-        >
-          <X size={18} />
-        </button>
-      </div>
+  if (activePanel === 'chart') return <ChartModal onClose={onClose} onInsert={onInsert} />;
+  if (activePanel === 'apps') return <AppsModal onClose={onClose} onInsert={onInsert} />;
 
-      {/* Panel Body */}
+  // Wrap all legacy panels in the new ModalShell until they are fully extracted
+  return (
+    <ModalShell 
+      title={`${activePanel === 'autolayout' ? 'Auto Layout' : activePanel} Controls`} 
+      onClose={onClose}
+    >
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {activePanel === 'text' && <TextPanel onInsert={onInsert} activeElement={activeElement} onUpdateElementStyle={onUpdateElementStyle} />}
-        {activePanel === 'table' && <TablePanel onInsert={onInsert} />}
-        {activePanel === 'chart' && <ChartPanel onInsert={onInsert} />}
         {activePanel === 'image' && <ImagePanel onInsert={onInsert} />}
         {activePanel === 'media' && <MediaPanel onInsert={onInsert} />}
-        {activePanel === 'shape' && <ShapePanel onInsert={onInsert} />}
-        {activePanel === 'formula' && <FormulaPanel onInsert={onInsert} isKaTeXLoaded={isKaTeXLoaded} />}
         {activePanel === 'autolayout' && <AutoLayoutPanel onApplyAutoLayout={onApplyAutoLayout} selectedElements={selectedElements} />}
-        {activePanel === 'asset' && <AssetPanel onInsert={onInsert} />}
         {activePanel === 'mindmap' && <MindMapPanel onInsert={onInsert} />}
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
-/* ── 1. TEXT PANEL ── */
-function TextPanel({ onInsert, activeElement, onUpdateElementStyle }) {
-  const [tab, setTab] = useState('text');
 
-  const presets = [
-    { label: 'Presentation Title', size: '44px', weight: 'bold', align: 'left', tag: 'h1' },
-    { label: 'Section Heading', size: '32px', weight: 'bold', align: 'left', tag: 'h2' },
-    { label: 'Subtitle', size: '20px', weight: '500', align: 'left', tag: 'h3' },
-    { label: 'Body Text', size: '14px', weight: 'normal', align: 'left', tag: 'p' },
-    { label: 'Caption', size: '11px', weight: '300', align: 'left', tag: 'span' },
-    { label: 'Quote Card Text', size: '18px', weight: 'italic', align: 'center', tag: 'blockquote' },
-    { label: 'Bullet List Item', size: '14px', weight: 'normal', align: 'left', tag: 'li-bullet' },
-    { label: 'Numbered List Item', size: '14px', weight: 'normal', align: 'left', tag: 'li-number' }
-  ];
-
-  return (
-    <div style={{ display: 'flex', width: '100%', height: '100%' }}>
-      <div style={{ width: '140px', borderRight: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
-        <button 
-          onClick={() => setTab('text')}
-          style={{
-            padding: '12px 16px',
-            textAlign: 'left',
-            border: 'none',
-            background: tab === 'text' ? '#fff' : 'transparent',
-            fontWeight: tab === 'text' ? 600 : 400,
-            color: tab === 'text' ? '#7c3aed' : '#475569',
-            borderLeft: tab === 'text' ? '3px solid #7c3aed' : '3px solid transparent',
-            cursor: 'pointer',
-            fontSize: '0.8rem'
-          }}
-        >
-          Text Presets
-        </button>
-        <button 
-          onClick={() => setTab('customize')}
-          style={{
-            padding: '12px 16px',
-            textAlign: 'left',
-            border: 'none',
-            background: tab === 'customize' ? '#fff' : 'transparent',
-            fontWeight: tab === 'customize' ? 600 : 400,
-            color: tab === 'customize' ? '#7c3aed' : '#475569',
-            borderLeft: tab === 'customize' ? '3px solid #7c3aed' : '3px solid transparent',
-            cursor: 'pointer',
-            fontSize: '0.8rem'
-          }}
-        >
-          Customize
-        </button>
-      </div>
-
-      <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
-        {tab === 'text' ? (
-          <div>
-            <h4 style={{ margin: '0 0 16px 0', color: '#1e293b', fontSize: '0.88rem' }}>Choose a preset to insert</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-              {presets.map((p, idx) => (
-                <div 
-                  key={idx}
-                  onClick={() => onInsert('text', p.label, {
-                    fontSize: p.size,
-                    fontWeight: p.weight === 'bold' ? 'bold' : 'normal',
-                    fontStyle: p.weight === 'italic' ? 'italic' : 'normal',
-                    textAlign: p.align,
-                    fontFamily: 'Inter',
-                    width: '320px',
-                    height: 'auto',
-                    left: '100px',
-                    top: '150px'
-                  })}
-                  style={{
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    padding: '12px',
-                    background: '#fff',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: '75px'
-                  }}
-                  className="hover-card-border"
-                >
-                  <span style={{ fontSize: '0.68rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>{p.label}</span>
-                  <div style={{ 
-                    fontSize: p.size === '44px' ? '1.1rem' : p.size === '32px' ? '0.9rem' : '0.8rem', 
-                    fontWeight: p.weight === 'bold' ? 'bold' : 'normal',
-                    fontStyle: p.weight === 'italic' ? 'italic' : 'normal',
-                    textAlign: p.align,
-                    color: '#0f172a',
-                    marginTop: '6px',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}>
-                    {p.label}
-                  </div>
-                  <span style={{ fontSize: '0.62rem', color: '#94a3b8', marginTop: '4px' }}>{p.size} · {p.weight}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div style={{ maxWidth: '400px' }}>
-            <h4 style={{ margin: '0 0 16px 0', color: '#1e293b', fontSize: '0.88rem' }}>Customize Active Text Settings</h4>
-            {activeElement ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.78rem', color: '#475569' }}>
-                  Font Family
-                  <select 
-                    style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                    onChange={e => onUpdateElementStyle(activeElement, { fontFamily: e.target.value })}
-                  >
-                    <option value="Inter">Inter</option>
-                    <option value="Outfit">Outfit</option>
-                    <option value="Playfair Display">Playfair Display</option>
-                    <option value="Fira Code">Fira Code</option>
-                  </select>
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.78rem', color: '#475569' }}>
-                  Line Height
-                  <input 
-                    type="range" min="1" max="2.5" step="0.1" 
-                    onChange={e => onUpdateElementStyle(activeElement, { lineHeight: e.target.value })}
-                  />
-                </label>
-              </div>
-            ) : (
-              <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Select a text box on the canvas to configure detailed properties.</p>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 /* ── 2. TABLE PANEL ── */
 function TablePanel({ onInsert }) {
@@ -1173,7 +893,7 @@ function AssetPanel({ onInsert }) {
 
   return (
     <div style={{ display: 'flex', width: '100%', height: '100%' }}>
-      <div style={{ width: '120px', borderRight: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ width: '140px', borderRight: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
         {[
           { id: 'icons', label: 'Icons' },
           { id: 'stickers', label: 'Stickers' },
@@ -1199,18 +919,18 @@ function AssetPanel({ onInsert }) {
         ))}
       </div>
 
-      <div style={{ flex: 1, padding: '16px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ marginBottom: '12px' }}>
+      <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ marginBottom: '16px' }}>
           <input 
             type="text" 
             placeholder="Search assets..." 
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.78rem', width: '200px' }}
+            style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '240px' }}
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', flex: 1 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', flex: 1 }}>
           {filteredAssets.map((asset, idx) => (
             <div
               key={idx}
@@ -1218,20 +938,20 @@ function AssetPanel({ onInsert }) {
               style={{
                 border: '1px solid #e2e8f0',
                 borderRadius: '8px',
-                padding: '10px',
+                padding: '16px',
                 background: '#fff',
                 cursor: 'pointer',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                minHeight: '85px',
+                height: '160px',
                 boxSizing: 'border-box'
               }}
               className="hover-card-border"
             >
-              <span style={{ fontSize: '2rem' }}>{asset.code}</span>
-              <span style={{ fontSize: '0.62rem', color: '#64748b', marginTop: '6px', textAlign: 'center' }}>{asset.label}</span>
+              <span style={{ fontSize: '3rem', marginBottom: '12px' }}>{asset.code}</span>
+              <span style={{ fontSize: '0.75rem', color: '#475569', textAlign: 'center', fontWeight: 500 }}>{asset.label}</span>
             </div>
           ))}
         </div>

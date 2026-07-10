@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useGoogleLogin } from '@react-oauth/google';
 import { authService } from '../services/auth';
 import { Presentation, ArrowRight } from 'lucide-react';
 import '../styles/Auth.css';
@@ -32,6 +33,23 @@ export default function SignIn() {
       setLoading(false);
     }
   };
+
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      setError('');
+      try {
+        await authService.googleLogin(tokenResponse.access_token);
+        setSuccess('Logged in securely! Redirecting...');
+        setTimeout(() => navigate('/dashboard'), 1000);
+      } catch (err) {
+        setError(err.response?.data?.message || err.message || 'Google Sign-In failed.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => setError('Google Sign-In was cancelled or failed.')
+  });
 
   return (
     <div className="auth-container">
@@ -89,7 +107,8 @@ export default function SignIn() {
           <button 
             type="button" 
             className="auth-btn-google"
-            onClick={() => alert('Google authentication integration coming soon!')}
+            onClick={() => handleGoogleLogin()}
+            disabled={loading}
           >
             <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
