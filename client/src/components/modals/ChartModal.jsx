@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 
 export default function ChartModal({ onClose, onInsert }) {
-  const [activeTab, setActiveTab] = useState('all');
+  const [selectedChartId, setSelectedChartId] = useState('line');
   const [searchQuery, setSearchQuery] = useState('');
   const [dataset, setDataset] = useState(null); // Loaded dataset metadata
   const [previewRows, setPreviewRows] = useState([]); // Loaded dataset rows
@@ -22,13 +22,18 @@ export default function ChartModal({ onClose, onInsert }) {
   const [chartTheme, setChartTheme] = useState('purple'); // purple, dark, classic
   const [showGrid, setShowGrid] = useState(true);
 
-  // Mock standard chart types database
+  // Full unified chart type library
   const chartLibrary = [
-    { id: 'bar', name: 'Bar Chart', desc: 'Compare discrete category metrics', icon: <BarChart3 size={24} color="#7c3aed" />, score: 95 },
-    { id: 'line', name: 'Line Chart', desc: 'Plot trends chronologically', icon: <LineChart size={24} color="#3b82f6" />, score: 98 },
-    { id: 'pie', name: 'Pie Chart', desc: 'Display shares of a whole', icon: <PieChart size={24} color="#f59e0b" />, score: 82 },
-    { id: 'area', name: 'Area Chart', desc: 'Highlight volume changes over time', icon: <Activity size={24} color="#10b981" />, score: 88 },
-    { id: 'scatter', name: 'Scatter Plot', desc: 'Examine coordinate relationship trends', icon: <ScatterChart size={24} color="#6366f1" />, score: 75 }
+    { id: 'bar', name: 'Bar Chart', desc: 'Compare discrete category metrics', icon: <BarChart3 size={20} color="#7c3aed" />, emoji: '📊' },
+    { id: 'line', name: 'Line Chart', desc: 'Plot trends chronologically', icon: <LineChart size={20} color="#3b82f6" />, emoji: '📈', isRec: true },
+    { id: 'pie', name: 'Pie Chart', desc: 'Display shares of a whole', icon: <PieChart size={20} color="#f59e0b" />, emoji: '🥧' },
+    { id: 'area', name: 'Area Chart', desc: 'Highlight volume changes over time', icon: <Activity size={20} color="#10b981" />, emoji: '📉' },
+    { id: 'scatter', name: 'Scatter Plot', desc: 'Examine coordinate relationship trends', icon: <ScatterChart size={20} color="#6366f1" />, emoji: '🔵' },
+    { id: 'heatmap', name: 'Heatmap', desc: 'Visualize matrix density values', icon: <Activity size={20} color="#f43f5e" />, emoji: '🌡️' },
+    { id: 'treemap', name: 'Treemap', desc: 'Show nested relative sizes', icon: <BarChart3 size={20} color="#06b6d4" />, emoji: '📦' },
+    { id: 'radar', name: 'Radar Chart', desc: 'Multi-variable comparison', icon: <Activity size={20} color="#a855f7" />, emoji: '🎯' },
+    { id: 'funnel', name: 'Funnel Chart', desc: 'Analyze conversion stages', icon: <BarChart3 size={20} color="#f97316" />, emoji: '💧' },
+    { id: 'bubble', name: 'Bubble Chart', desc: 'Coordinate sizes plotting', icon: <ScatterChart size={20} color="#eab308" />, emoji: '📍' }
   ];
 
   // Default pre-populated dataset for instant visualization
@@ -56,15 +61,6 @@ export default function ChartModal({ onClose, onInsert }) {
     });
   };
 
-  // Simulate file drag-and-drop parse
-  const handleFileUpload = (e) => {
-    setLoading(true);
-    setTimeout(() => {
-      loadDefaultDataset();
-      setLoading(false);
-    }, 800);
-  };
-
   const handleCommandSend = () => {
     if (!cmdInput.trim()) return;
     setAiCommands(prev => [...prev, { sender: 'user', text: cmdInput }]);
@@ -80,8 +76,11 @@ export default function ChartModal({ onClose, onInsert }) {
         setChartTheme('dark');
         reply = "Theme switched to Dark mode aesthetics successfully.";
       } else if (query.includes('pie')) {
-        setActiveTab('pie');
+        setSelectedChartId('pie');
         reply = "Visualization converted into a Pie chart.";
+      } else if (query.includes('bar')) {
+        setSelectedChartId('bar');
+        reply = "Visualization converted into a Bar chart.";
       } else if (query.includes('hide grid') || query.includes('grid')) {
         setShowGrid(false);
         reply = "Grid lines have been hidden from the visualization canvas.";
@@ -94,29 +93,16 @@ export default function ChartModal({ onClose, onInsert }) {
   // Filter library items
   const filteredLibrary = useMemo(() => {
     return chartLibrary.filter(c => {
-      const matchesTab = activeTab === 'all' || c.id === activeTab;
-      const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            c.desc.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesTab && matchesSearch;
+      return c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+             c.desc.toLowerCase().includes(searchQuery.toLowerCase());
     });
-  }, [activeTab, searchQuery]);
+  }, [searchQuery]);
 
   return (
     <ModalShell 
       title="Charts & Data Visualization" 
       onClose={onClose}
-      sidebarTabs={[
-        { id: 'all', label: 'All Charts' },
-        { id: 'bar', label: 'Bar Charts' },
-        { id: 'line', label: 'Line Charts' },
-        { id: 'pie', label: 'Pie Charts' },
-        { id: 'area', label: 'Area Charts' },
-        { id: 'scatter', label: 'Scatter Plots' },
-        { id: 'preview', label: 'Data Preview' },
-        { id: 'dashboard', label: 'Dashboard Mode' }
-      ]}
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
+      sidebarTabs={[]} // Left sidebar completely removed
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%' }}>
         {/* Sticky Header Row */}
@@ -156,6 +142,7 @@ export default function ChartModal({ onClose, onInsert }) {
         <div style={{ flex: 1, display: 'flex', gap: '24px', overflow: 'hidden' }}>
           {/* Main Visualizer & Grid area */}
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px', paddingRight: '4px' }}>
+            
             {/* Upload Area if no data loaded */}
             {!dataset && (
               <div 
@@ -177,51 +164,120 @@ export default function ChartModal({ onClose, onInsert }) {
             {/* If dataset loaded, show interactive visualizer */}
             {dataset && (
               <>
-                {/* AI recommendations header */}
-                <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '12px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {/* AI Recommended Charts Section */}
+                <div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
                     <Sparkles size={18} color="#7c3aed" />
-                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#5b21b6' }}>
-                      AI Recommendation: Line Chart (98% match for time-series trend)
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#5b21b6' }}>
+                      Recommended: Line Chart (95% match)
                     </span>
                   </div>
-                  <button 
-                    onClick={() => setActiveTab('line')}
-                    style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    Apply Recommended
-                  </button>
+                  
+                  {/* Gallery of Chart Selection Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
+                    {filteredLibrary.map(chart => {
+                      const isActive = selectedChartId === chart.id;
+                      return (
+                        <div 
+                          key={chart.id}
+                          onClick={() => setSelectedChartId(chart.id)}
+                          style={{
+                            border: isActive ? '2px solid #7c3aed' : '1px solid #e2e8f0', 
+                            borderRadius: '10px', padding: '10px',
+                            cursor: 'pointer', transition: 'all 0.2s', 
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                            background: isActive ? '#faf5ff' : '#fff',
+                            position: 'relative'
+                          }}
+                        >
+                          <span style={{ fontSize: '1.25rem' }}>{chart.emoji}</span>
+                          <span style={{ fontSize: '0.75rem', fontWeight: isActive ? 600 : 500, color: '#334155' }}>{chart.name}</span>
+                          {chart.isRec && (
+                            <span style={{ position: 'absolute', top: -6, right: -6, background: '#a855f7', color: '#fff', borderRadius: '10px', padding: '1px 5px', fontSize: '0.55rem', fontWeight: 700 }}>⭐ REC</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {/* Main preview/chart visualization area */}
+                {/* Live Chart Preview Canvas */}
                 <div style={{ 
                   background: chartTheme === 'dark' ? '#0f172a' : '#f8fafc', 
                   borderRadius: '12px', border: '1px solid #e2e8f0', padding: '24px', 
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '240px',
-                  color: chartTheme === 'dark' ? '#fff' : '#334155'
+                  color: chartTheme === 'dark' ? '#fff' : '#334155', position: 'relative'
                 }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: chartTheme === 'dark' ? '#fff' : '#1e293b' }}>
-                    {chartTitle}
+                    {chartTitle} ({selectedChartId.toUpperCase()})
                   </h4>
-                  {/* Render Visual Representation */}
+                  {/* Simulated Chart Types Layout */}
                   <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', height: '120px', width: '100%', maxWidth: '300px' }}>
-                    {previewRows.map((row, idx) => (
-                      <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                        <div style={{ 
-                          width: '100%', 
-                          height: `${(row.Revenue / 30000) * 100}px`, 
-                          background: chartTheme === 'dark' ? '#c084fc' : '#7c3aed',
-                          borderRadius: '4px 4px 0 0',
-                          transition: 'height 0.3s'
-                        }} />
-                        <span style={{ fontSize: '0.65rem', color: chartTheme === 'dark' ? '#94a3b8' : '#64748b' }}>{row.Month}</span>
+                    {selectedChartId === 'pie' ? (
+                      <div style={{ 
+                        width: '100px', height: '100px', borderRadius: '50%', 
+                        background: 'conic-gradient(#7c3aed 0% 40%, #10b981 40% 70%, #f59e0b 70% 100%)',
+                        margin: '0 auto'
+                      }} />
+                    ) : selectedChartId === 'scatter' ? (
+                      <div style={{ position: 'relative', width: '100%', height: '100px' }}>
+                        {[20, 40, 60, 80].map((left, i) => (
+                          <div key={i} style={{ 
+                            position: 'absolute', bottom: `${left}px`, left: `${left}%`, 
+                            width: '8px', height: '8px', borderRadius: '50%', background: '#7c3aed' 
+                          }} />
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      // Bar / Line / Area default display
+                      previewRows.map((row, idx) => (
+                        <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                          <div style={{ 
+                            width: '100%', 
+                            height: `${(row.Revenue / 30000) * 100}px`, 
+                            background: chartTheme === 'dark' ? '#c084fc' : '#7c3aed',
+                            borderRadius: '4px 4px 0 0',
+                            transition: 'height 0.3s'
+                          }} />
+                          <span style={{ fontSize: '0.65rem', color: chartTheme === 'dark' ? '#94a3b8' : '#64748b' }}>{row.Month}</span>
+                        </div>
+                      ))
+                    )}
                   </div>
                   {showGrid && <div style={{ width: '100%', maxWidth: '300px', height: '1px', background: chartTheme === 'dark' ? '#334155' : '#cbd5e1', marginTop: '4px' }} />}
                 </div>
 
-                {/* Quick insights card */}
+                {/* Dataset Preview Grid */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#64748b' }}>
+                    <span>File: <b>{dataset.name}</b> ({dataset.size})</span>
+                    <span>Loaded {dataset.rows} rows and {dataset.cols} columns</span>
+                  </div>
+                  <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                          {columns.map(col => (
+                            <th key={col.name} style={{ padding: '8px 12px', fontWeight: 600, color: '#475569' }}>
+                              {col.name} <span style={{ fontSize: '0.62rem', color: '#94a3b8', fontWeight: 400 }}>({col.type})</span>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {previewRows.map((row, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            {columns.map(col => (
+                              <td key={col.name} style={{ padding: '8px 12px', color: '#334155' }}>{row[col.name]}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* AI Insights Card */}
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
                   <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#475569', marginBottom: '8px' }}>AI Data Insights</div>
                   <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.78rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -231,67 +287,6 @@ export default function ChartModal({ onClose, onInsert }) {
                   </ul>
                 </div>
               </>
-            )}
-
-            {/* List of other chart options */}
-            {activeTab !== 'preview' && (
-              <div>
-                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>Chart Types</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
-                  {filteredLibrary.map(chart => (
-                    <div 
-                      key={chart.id}
-                      onClick={() => onInsert('chart', { chartType: chart.id, title: chartTitle }, { width: '400px', height: '300px' })}
-                      style={{
-                        border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px',
-                        cursor: 'pointer', transition: 'all 0.2s', display: 'flex', gap: '12px', alignItems: 'center', background: '#fff'
-                      }}
-                      onMouseOver={(e) => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(124,58,237,0.06)'; }}
-                      onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
-                    >
-                      <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        {chart.icon}
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.8rem', color: '#1e293b' }}>{chart.name}</div>
-                        <div style={{ fontSize: '0.68rem', color: '#64748b', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{chart.desc}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Data preview table tab */}
-            {activeTab === 'preview' && dataset && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#64748b' }}>
-                  <span>File: <b>{dataset.name}</b> ({dataset.size})</span>
-                  <span>Loaded {dataset.rows} rows and {dataset.cols} columns</span>
-                </div>
-                <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                        {columns.map(col => (
-                          <th key={col.name} style={{ padding: '8px 12px', fontWeight: 600, color: '#475569' }}>
-                            {col.name} <span style={{ fontSize: '0.62rem', color: '#94a3b8', fontWeight: 400 }}>({col.type})</span>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previewRows.map((row, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          {columns.map(col => (
-                            <td key={col.name} style={{ padding: '8px 12px', color: '#334155' }}>{row[col.name]}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
             )}
           </div>
 
@@ -403,7 +398,7 @@ export default function ChartModal({ onClose, onInsert }) {
             {/* Action buttons */}
             <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button 
-                onClick={() => onInsert('chart', { chartType: activeTab === 'all' ? 'bar' : activeTab, title: chartTitle }, { width: '400px', height: '300px' })}
+                onClick={() => onInsert('chart', { chartType: selectedChartId, title: chartTitle }, { width: '400px', height: '300px' })}
                 disabled={!dataset}
                 className="ai-btn-purple"
                 style={{ width: '100%', padding: '10px', fontSize: '0.8rem', fontWeight: 600, opacity: dataset ? 1 : 0.5, cursor: dataset ? 'pointer' : 'not-allowed' }}

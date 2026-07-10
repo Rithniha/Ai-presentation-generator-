@@ -2072,8 +2072,6 @@ export default function MainEditor() {
           {/* Section Divider */}
           <div style={{ width: '70%', height: '1px', background: 'rgba(255,255,255,0.12)', margin: '8px 0' }} />
 
-          {/* Group: Layout */}
-          <div style={{ fontSize: '0.58rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', alignSelf: 'center', margin: '4px 0 2px' }}>Layout</div>
           {[
             { id: 'autolayout', icon: LayoutGrid, label: 'Auto Layout' },
             { id: 'mindmap', icon: Network, label: 'Mind Map' },
@@ -2094,8 +2092,6 @@ export default function MainEditor() {
           {/* Section Divider */}
           <div style={{ width: '70%', height: '1px', background: 'rgba(255,255,255,0.12)', margin: '8px 0' }} />
 
-          {/* Group: Resources */}
-          <div style={{ fontSize: '0.58rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', alignSelf: 'center', margin: '4px 0 2px' }}>Resources</div>
           {[
             { id: 'asset', icon: Package, label: 'Assets' },
             { id: 'media', icon: Play, label: 'Media' },
