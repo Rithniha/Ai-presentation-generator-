@@ -1,0 +1,408 @@
+/* Advanced Editor Workspace */
+.adv-editor-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #f3f4f6; /* Light gray UI */
+  font-family: 'Inter', sans-serif;
+  color: #1f2937;
+}
+
+/* Dark mode fallback if theme dictates */
+.adv-editor-layout[data-theme="dark"],
+.adv-editor-layout[data-theme="cyberpunk"] {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+/* Topbar */
+.adv-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 1rem;
+}
+
+.adv-editor-layout[data-theme="dark"] .adv-topbar { background-color: #1f2937; border-color: #374151; }
+
+.adv-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.adv-icon-btn {
+  background: none;
+  border: none;
+  color: #4b5563;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+.adv-icon-btn:hover { background: #f3f4f6; }
+
+.adv-doc-title {
+  font-weight: 600;
+  font-size: 1rem;
+  display: block;
+}
+
+.adv-menu-links {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 2px;
+}
+.adv-menu-links span:hover { color: #3b82f6; cursor: pointer; }
+
+.adv-topbar-center {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.adv-tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #4b5563;
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+.adv-tool-btn:hover { background: #f3f4f6; }
+
+.adv-divider {
+  width: 1px;
+  height: 24px;
+  background-color: #e5e7eb;
+}
+
+.adv-topbar-right {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.adv-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.adv-btn-primary { background: #8b5cf6; color: #fff; }
+.adv-btn-primary:hover { background: #7c3aed; }
+
+.adv-btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+.adv-btn-secondary:hover { background: #e5e7eb; }
+
+/* Formatting Toolbar */
+.adv-format-toolbar {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 1rem;
+  gap: 0.75rem;
+}
+
+.adv-font-select {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: #f9fafb;
+}
+
+.adv-font-size-control {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.adv-font-size-control button {
+  background: #f9fafb;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.adv-font-size-control button:hover { background: #e5e7eb; }
+.adv-font-size-control span { padding: 0 8px; font-size: 0.85rem; border-left: 1px solid #d1d5db; border-right: 1px solid #d1d5db; }
+
+.adv-format-btn {
+  background: none;
+  border: none;
+  color: #4b5563;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+}
+.adv-format-btn:hover { background: #f3f4f6; }
+
+.adv-color-picker {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+}
+
+/* Workspace */
+.adv-workspace {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Extreme Left Toolbar (Canva Nav) */
+.adv-side-nav {
+  width: 72px;
+  background-color: #1f2937;
+  color: #9ca3af;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 1rem;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.adv-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  width: 100%;
+  padding: 0.75rem 0;
+  cursor: pointer;
+  font-size: 0.65rem;
+  transition: 0.2s;
+}
+
+.adv-nav-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.adv-nav-item.active { color: #fff; background: rgba(255,255,255,0.1); }
+
+/* Context Drawer */
+.adv-drawer {
+  width: 320px;
+  background-color: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.adv-drawer-content { padding: 1.5rem; }
+.adv-drawer-content h3 { font-size: 0.9rem; margin-bottom: 1rem; font-weight: 600; color: #111827; }
+
+.adv-layout-grid, .adv-theme-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.adv-layout-thumb, .adv-theme-thumb {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  cursor: pointer;
+  background: #f9fafb;
+}
+
+.adv-layout-thumb:hover, .adv-theme-thumb:hover { border-color: #8b5cf6; }
+.adv-theme-thumb.active { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
+
+.adv-add-text-btn {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+  text-align: left;
+}
+.adv-add-text-btn:hover { background: #f9fafb; }
+.adv-add-text-btn.h1 { font-size: 1.5rem; font-weight: 700; }
+.adv-add-text-btn.h2 { font-size: 1.2rem; font-weight: 600; }
+.adv-add-text-btn.body { font-size: 0.9rem; }
+
+/* Canvas Area */
+.adv-canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f3f4f6;
+  position: relative;
+}
+
+.adv-canvas-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  overflow: auto;
+}
+
+.slide-frame {
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 16/9;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  position: relative;
+  padding: 3rem;
+  border-radius: 4px;
+}
+
+.slide-frame[data-theme="dark"] { background: #0f172a; color: #fff; }
+
+.slide-header {
+  border: 2px solid transparent;
+  padding: 0.25rem;
+}
+.slide-header.selected {
+  border: 2px dashed #8b5cf6;
+}
+
+/* Filmstrip (PowerPoint bottom thumbnails) */
+.adv-filmstrip {
+  height: 120px;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  gap: 1rem;
+  overflow-x: auto;
+}
+
+.adv-strip-thumb {
+  width: 140px;
+  aspect-ratio: 16/9;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 4px;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  padding: 0.5rem;
+  text-align: center;
+}
+.adv-strip-thumb.active { border-color: #8b5cf6; }
+
+.adv-strip-num {
+  position: absolute;
+  top: 4px; left: 4px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  border-radius: 2px;
+  padding: 2px 4px;
+  font-size: 0.6rem;
+}
+
+.adv-strip-del {
+  position: absolute;
+  bottom: 4px; right: 4px;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  padding: 2px;
+  cursor: pointer;
+  opacity: 0;
+}
+.adv-strip-thumb:hover .adv-strip-del { opacity: 1; }
+
+.adv-add-slide-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  border: 2px dashed #d1d5db;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+}
+.adv-add-slide-btn:hover { border-color: #8b5cf6; color: #8b5cf6; }
+
+/* Right Properties */
+.adv-properties-panel {
+  width: 280px;
+  background: #ffffff;
+  border-left: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.adv-prop-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.adv-prop-header h3 { font-size: 0.9rem; font-weight: 600; color: #111827; }
+
+.adv-prop-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.adv-prop-section {
+  padding: 1rem;
+}
+.adv-prop-section label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+
+.adv-select-full {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #f9fafb;
+}
+
+.adv-notes-input {
+  width: 100%;
+  height: 150px;
+  resize: none;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
